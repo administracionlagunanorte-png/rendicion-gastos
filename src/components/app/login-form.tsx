@@ -30,13 +30,22 @@ export function LoginForm() {
       })
 
       if (result?.error) {
-        setError('Email o contraseña incorrectos')
+        console.log('[Login] Error from signIn:', result.error)
+        if (result.error === 'CallbackRouteError') {
+          setError('Error del servidor. Intente recargar la página e intentar nuevamente.')
+        } else {
+          setError('Email o contraseña incorrectos')
+        }
       } else if (result?.ok) {
+        console.log('[Login] Login successful, reloading page...')
         // Force a page reload to ensure session is properly set
         window.location.reload()
+      } else {
+        setError('No se pudo iniciar sesión. Intente nuevamente.')
       }
-    } catch {
-      setError('Ocurrió un error al iniciar sesión')
+    } catch (err) {
+      console.error('[Login] Exception during signIn:', err)
+      setError('Ocurrió un error al iniciar sesión. Verifique su conexión.')
     } finally {
       setIsLoading(false)
     }
@@ -111,6 +120,11 @@ export function LoginForm() {
                     disabled={isLoading}
                   />
                 </div>
+              </div>
+              <div className="bg-muted/50 rounded-lg p-3 text-xs text-muted-foreground">
+                <p className="font-medium mb-1">Credenciales de prueba:</p>
+                <p>Admin: admin@empresa.com / password123</p>
+                <p>Usuario: maria@empresa.com / password123</p>
               </div>
             </CardContent>
             <CardFooter className="flex flex-col gap-4">

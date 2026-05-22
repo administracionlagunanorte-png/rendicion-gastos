@@ -34,27 +34,36 @@ export const authOptions: NextAuthOptions = {
       },
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) {
+          console.log("[Auth] Missing credentials")
           return null
         }
 
-        const user = await db.user.findUnique({
-          where: { email: credentials.email }
-        })
+        try {
+          const user = await db.user.findUnique({
+            where: { email: credentials.email }
+          })
 
-        if (!user) {
+          if (!user) {
+            console.log("[Auth] User not found:", credentials.email)
+            return null
+          }
+
+          const isValid = await bcrypt.compare(credentials.password, user.password)
+          if (!isValid) {
+            console.log("[Auth] Invalid password for:", credentials.email)
+            return null
+          }
+
+          console.log("[Auth] Login successful:", credentials.email, "Role:", user.role)
+          return {
+            id: user.id,
+            email: user.email,
+            name: user.name,
+            role: user.role
+          }
+        } catch (error) {
+          console.error("[Auth] Error during authorization:", error)
           return null
-        }
-
-        const isValid = await bcrypt.compare(credentials.password, user.password)
-        if (!isValid) {
-          return null
-        }
-
-        return {
-          id: user.id,
-          email: user.email,
-          name: user.name,
-          role: user.role
         }
       }
     })
@@ -72,8 +81,8 @@ export const authOptions: NextAuthOptions = {
     },
     async session({ session, token }) {
       if (session.user) {
-        session.user.id = token.id
-        session.user.role = token.role
+        session.user.id = token.id as string
+        session.user.role = token.role as string
       }
       return session
     }
@@ -81,5 +90,8 @@ export const authOptions: NextAuthOptions = {
   pages: {
     signIn: '/'
   },
-  secret: process.env.NEXTAUTH_SECRET || "expense-app-secret-key-2024"
+  secret: process.env.NEXTAUTH_SECRET || "expense-app-secret-key-2024",
+  // Trust the reverse proxy (Caddy) so NextAuth uses X-Forwarded-Host/Proto
+  // to determine the correct callback URL instead of localhost
+  trustHost: true,
 }
