@@ -33,10 +33,9 @@ function AppContent() {
   const [seeding, setSeeding] = useState(false)
 
   // When session becomes authenticated, navigate to the correct dashboard
-  // This handles both client-side signIn and page reload after redirect
   useEffect(() => {
-    if (status === 'authenticated') {
-      const role = session?.user?.role
+    if (status === 'authenticated' && session?.user) {
+      const role = session.user.role
       if (currentView === 'login' || currentView === 'register') {
         setCurrentView(role === 'ADMIN' ? 'admin-dashboard' : 'dashboard')
       }

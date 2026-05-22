@@ -1,7 +1,8 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { signIn } from 'next-auth/react'
+import { useSession } from 'next-auth/react'
 import { motion } from 'framer-motion'
 import { Loader2, LogIn, Mail, Lock, Receipt } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -16,6 +17,30 @@ export function LoginForm() {
   const [error, setError] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const { setCurrentView } = useAppStore()
+  const { data: session, status } = useSession()
+
+  // Check for URL error parameters (from NextAuth redirect)
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search)
+    const urlError = urlParams.get('error')
+    if (urlError) {
+      if (urlError === 'CredentialsSignin') {
+        setError('Email o contraseña incorrectos.')
+      } else {
+        setError('Error de autenticación. Intente nuevamente.')
+      }
+      // Clean the URL
+      window.history.replaceState({}, '', '/')
+    }
+  }, [])
+
+  // Auto-navigate when session becomes authenticated
+  useEffect(() => {
+    if (status === 'authenticated' && session?.user) {
+      const role = session.user.role
+      setCurrentView(role === 'ADMIN' ? 'admin-dashboard' : 'dashboard')
+    }
+  }, [status, session, setCurrentView])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -23,20 +48,35 @@ export function LoginForm() {
     setIsLoading(true)
 
     try {
-      // Use NextAuth's default redirect behavior
-      // This is the most reliable way to handle login because:
-      // 1. NextAuth handles the redirect and cookie setting atomically
-      // 2. The browser follows the redirect and loads the page with the session cookie
-      // 3. No need for manual window.location.reload() or session checking
-      await signIn('credentials', {
+      const result = await signIn('credentials', {
         email,
         password,
-        // No redirect: false - let NextAuth handle the redirect naturally
-        callbackUrl: '/',
+        redirect: false,
       })
+
+      if (result?.error) {
+        // NextAuth returned an error
+        if (result.error === 'CredentialsSignin') {
+          setError('Email o contraseña incorrectos. Verifique sus datos e intente nuevamente.')
+        } else {
+          setError('Error de autenticación: ' + result.error)
+        }
+        setIsLoading(false)
+        return
+      }
+
+      if (result?.ok) {
+        // Login successful - force a full page reload to ensure session cookie is set
+        window.location.href = '/'
+        return
+      }
+
+      // No result returned at all
+      setError('No se recibió respuesta del servidor. Intente nuevamente.')
+      setIsLoading(false)
     } catch (err) {
       console.error('[Login] Exception:', err)
-      setError('Ocurrió un error al iniciar sesión.')
+      setError('Ocurrió un error al iniciar sesión. Verifique su conexión.')
       setIsLoading(false)
     }
   }
