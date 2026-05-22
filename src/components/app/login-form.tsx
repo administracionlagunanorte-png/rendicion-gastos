@@ -23,30 +23,20 @@ export function LoginForm() {
     setIsLoading(true)
 
     try {
-      const result = await signIn('credentials', {
+      // Use NextAuth's default redirect behavior
+      // This is the most reliable way to handle login because:
+      // 1. NextAuth handles the redirect and cookie setting atomically
+      // 2. The browser follows the redirect and loads the page with the session cookie
+      // 3. No need for manual window.location.reload() or session checking
+      await signIn('credentials', {
         email,
         password,
-        redirect: false,
+        // No redirect: false - let NextAuth handle the redirect naturally
+        callbackUrl: '/',
       })
-
-      if (result?.error) {
-        console.log('[Login] Error from signIn:', result.error)
-        if (result.error === 'CallbackRouteError') {
-          setError('Error del servidor. Intente recargar la página e intentar nuevamente.')
-        } else {
-          setError('Email o contraseña incorrectos')
-        }
-      } else if (result?.ok) {
-        console.log('[Login] Login successful, reloading page...')
-        // Force a page reload to ensure session is properly set
-        window.location.reload()
-      } else {
-        setError('No se pudo iniciar sesión. Intente nuevamente.')
-      }
     } catch (err) {
-      console.error('[Login] Exception during signIn:', err)
-      setError('Ocurrió un error al iniciar sesión. Verifique su conexión.')
-    } finally {
+      console.error('[Login] Exception:', err)
+      setError('Ocurrió un error al iniciar sesión.')
       setIsLoading(false)
     }
   }
@@ -121,8 +111,8 @@ export function LoginForm() {
                   />
                 </div>
               </div>
-              <div className="bg-muted/50 rounded-lg p-3 text-xs text-muted-foreground">
-                <p className="font-medium mb-1">Credenciales de prueba:</p>
+              <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-3 text-xs text-emerald-800">
+                <p className="font-semibold mb-1">Credenciales de prueba:</p>
                 <p>Admin: admin@empresa.com / password123</p>
                 <p>Usuario: maria@empresa.com / password123</p>
               </div>

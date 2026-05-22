@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useCallback } from 'react'
+import { useEffect } from 'react'
 import { useSession } from 'next-auth/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { SessionProvider } from 'next-auth/react'
@@ -32,17 +32,16 @@ function AppContent() {
   const { currentView, setCurrentView } = useAppStore()
   const [seeding, setSeeding] = useState(false)
 
-  // Redirect to dashboard when session is authenticated
-  const navigateToDashboard = useCallback(() => {
-    if (status === 'authenticated' && (currentView === 'login' || currentView === 'register')) {
-      const role = (session?.user as any)?.role
-      setCurrentView(role === 'ADMIN' ? 'admin-dashboard' : 'dashboard')
+  // When session becomes authenticated, navigate to the correct dashboard
+  // This handles both client-side signIn and page reload after redirect
+  useEffect(() => {
+    if (status === 'authenticated') {
+      const role = session?.user?.role
+      if (currentView === 'login' || currentView === 'register') {
+        setCurrentView(role === 'ADMIN' ? 'admin-dashboard' : 'dashboard')
+      }
     }
   }, [status, session, currentView, setCurrentView])
-
-  useEffect(() => {
-    navigateToDashboard()
-  }, [navigateToDashboard])
 
   const handleSeed = async () => {
     setSeeding(true)
@@ -78,7 +77,7 @@ function AppContent() {
     )
   }
 
-  // Not authenticated
+  // Not authenticated - show login/register
   if (status === 'unauthenticated') {
     return (
       <div className="relative">

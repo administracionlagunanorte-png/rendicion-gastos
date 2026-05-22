@@ -34,7 +34,6 @@ export const authOptions: NextAuthOptions = {
       },
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) {
-          console.log("[Auth] Missing credentials")
           return null
         }
 
@@ -44,17 +43,14 @@ export const authOptions: NextAuthOptions = {
           })
 
           if (!user) {
-            console.log("[Auth] User not found:", credentials.email)
             return null
           }
 
           const isValid = await bcrypt.compare(credentials.password, user.password)
           if (!isValid) {
-            console.log("[Auth] Invalid password for:", credentials.email)
             return null
           }
 
-          console.log("[Auth] Login successful:", credentials.email, "Role:", user.role)
           return {
             id: user.id,
             email: user.email,
@@ -62,14 +58,15 @@ export const authOptions: NextAuthOptions = {
             role: user.role
           }
         } catch (error) {
-          console.error("[Auth] Error during authorization:", error)
+          console.error("[Auth] Authorization error:", error)
           return null
         }
       }
     })
   ],
   session: {
-    strategy: "jwt"
+    strategy: "jwt",
+    maxAge: 30 * 24 * 60 * 60, // 30 days
   },
   callbacks: {
     async jwt({ token, user }) {
@@ -91,7 +88,18 @@ export const authOptions: NextAuthOptions = {
     signIn: '/'
   },
   secret: process.env.NEXTAUTH_SECRET || "expense-app-secret-key-2024",
-  // Trust the reverse proxy (Caddy) so NextAuth uses X-Forwarded-Host/Proto
-  // to determine the correct callback URL instead of localhost
+  // Trust the reverse proxy so NextAuth uses X-Forwarded-Host/Proto headers
   trustHost: true,
+  cookies: {
+    sessionToken: {
+      name: `next-auth.session-token`,
+      options: {
+        httpOnly: true,
+        sameSite: "lax",
+        path: "/",
+        // Don't set secure flag since we may be accessed via HTTP in development
+        // The browser will handle this appropriately
+      },
+    },
+  },
 }
