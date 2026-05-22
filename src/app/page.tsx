@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useCallback } from 'react'
 import { useSession } from 'next-auth/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { SessionProvider } from 'next-auth/react'
@@ -9,7 +9,6 @@ import { useAppStore } from '@/lib/store'
 import { LoginForm } from '@/components/app/login-form'
 import { RegisterForm } from '@/components/app/register-form'
 import { AppShell } from '@/components/app/app-shell'
-import { UserDashboard } from '@/components/app/user-dashboard'
 import { AdminDashboard } from '@/components/app/admin-dashboard'
 import { ReportForm } from '@/components/app/report-form'
 import { ReportDetail } from '@/components/app/report-detail'
@@ -33,13 +32,17 @@ function AppContent() {
   const { currentView, setCurrentView } = useAppStore()
   const [seeding, setSeeding] = useState(false)
 
-  // Redirect to dashboard when session changes
-  useEffect(() => {
+  // Redirect to dashboard when session is authenticated
+  const navigateToDashboard = useCallback(() => {
     if (status === 'authenticated' && (currentView === 'login' || currentView === 'register')) {
       const role = (session?.user as any)?.role
       setCurrentView(role === 'ADMIN' ? 'admin-dashboard' : 'dashboard')
     }
   }, [status, session, currentView, setCurrentView])
+
+  useEffect(() => {
+    navigateToDashboard()
+  }, [navigateToDashboard])
 
   const handleSeed = async () => {
     setSeeding(true)
@@ -130,7 +133,7 @@ function AppContent() {
 
 export default function Home() {
   return (
-    <SessionProvider>
+    <SessionProvider refetchInterval={5 * 60} refetchOnWindowFocus={true}>
       <QueryClientProvider client={queryClient}>
         <AppContent />
         <Toaster position="top-right" richColors closeButton />

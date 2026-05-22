@@ -70,8 +70,10 @@ export function RegisterForm() {
         // If auto-login fails, redirect to login
         setCurrentView('login')
         toast.info('Cuenta creada. Por favor inicie sesión manualmente.')
+      } else if (result?.ok) {
+        // Force reload to ensure session is properly set
+        window.location.reload()
       }
-      // On success, page.tsx handles navigation via useSession
     } catch {
       setError('Ocurrió un error al registrar el usuario')
     } finally {

@@ -31,8 +31,10 @@ export function LoginForm() {
 
       if (result?.error) {
         setError('Email o contraseña incorrectos')
+      } else if (result?.ok) {
+        // Force a page reload to ensure session is properly set
+        window.location.reload()
       }
-      // On success, the page.tsx will handle navigation via useSession
     } catch {
       setError('Ocurrió un error al iniciar sesión')
     } finally {
@@ -107,7 +109,6 @@ export function LoginForm() {
                     className="pl-10"
                     required
                     disabled={isLoading}
-                    minLength={6}
                   />
                 </div>
               </div>

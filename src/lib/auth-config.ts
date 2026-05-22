@@ -3,6 +3,27 @@ import CredentialsProvider from "next-auth/providers/credentials"
 import bcrypt from "bcryptjs"
 import { db } from "@/lib/db"
 
+declare module "next-auth" {
+  interface Session {
+    user: {
+      id: string
+      email: string
+      name: string
+      role: string
+    }
+  }
+  interface User {
+    role: string
+  }
+}
+
+declare module "next-auth/jwt" {
+  interface JWT {
+    id: string
+    role: string
+  }
+}
+
 export const authOptions: NextAuthOptions = {
   providers: [
     CredentialsProvider({
@@ -44,15 +65,15 @@ export const authOptions: NextAuthOptions = {
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
-        token.role = (user as any).role
         token.id = user.id
+        token.role = user.role
       }
       return token
     },
     async session({ session, token }) {
       if (session.user) {
-        (session.user as any).role = token.role
-        (session.user as any).id = token.id
+        session.user.id = token.id
+        session.user.role = token.role
       }
       return session
     }
