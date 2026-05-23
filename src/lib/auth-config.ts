@@ -86,6 +86,31 @@ export const authOptions: NextAuthOptions = {
         session.user.role = token.role as string
       }
       return session
+    },
+    async redirect({ url, baseUrl }) {
+      // When behind a reverse proxy, baseUrl might be wrong (localhost:3000)
+      // The NEXTAUTH_URL is set dynamically in the route handler
+      // So baseUrl should now be correct
+      
+      // If url is relative, prepend baseUrl
+      if (url.startsWith("/")) return baseUrl + url
+      
+      // If url is on same origin as baseUrl, allow it
+      try {
+        if (new URL(url).origin === new URL(baseUrl).origin) return url
+      } catch {}
+      
+      // If url points to localhost:3000 (internal), replace with baseUrl
+      try {
+        const urlObj = new URL(url)
+        const baseObj = new URL(baseUrl)
+        if (urlObj.hostname === 'localhost' && urlObj.port === '3000') {
+          return baseObj.origin + urlObj.pathname + urlObj.search
+        }
+      } catch {}
+      
+      console.log("[Auth] Redirect: url=", url, "baseUrl=", baseUrl)
+      return url
     }
   },
   pages: {
@@ -103,6 +128,24 @@ export const authOptions: NextAuthOptions = {
         path: "/",
         // Don't set secure flag since we may be accessed via HTTP in development
         // The browser will handle this appropriately
+      },
+    },
+    callbackUrl: {
+      name: `next-auth.callback-url`,
+      options: {
+        httpOnly: true,
+        sameSite: "lax",
+        path: "/",
+        secure: false,
+      },
+    },
+    csrfToken: {
+      name: `next-auth.csrf-token`,
+      options: {
+        httpOnly: true,
+        sameSite: "lax",
+        path: "/",
+        secure: false,
       },
     },
   },

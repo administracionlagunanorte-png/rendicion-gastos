@@ -1,8 +1,7 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { signIn } from 'next-auth/react'
-import { useSession } from 'next-auth/react'
+import { useState, useEffect, useCallback } from 'react'
+import { signIn, useSession } from 'next-auth/react'
 import { motion } from 'framer-motion'
 import { Loader2, LogIn, Mail, Lock, Receipt } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -19,7 +18,7 @@ export function LoginForm() {
   const { setCurrentView } = useAppStore()
   const { data: session, status } = useSession()
 
-  // Check for URL error parameters (from NextAuth redirect)
+  // Check for URL error parameters
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search)
     const urlError = urlParams.get('error')
@@ -29,18 +28,21 @@ export function LoginForm() {
       } else {
         setError('Error de autenticación. Intente nuevamente.')
       }
-      // Clean the URL
       window.history.replaceState({}, '', '/')
     }
   }, [])
 
   // Auto-navigate when session becomes authenticated
-  useEffect(() => {
+  const handleSessionChange = useCallback(() => {
     if (status === 'authenticated' && session?.user) {
       const role = session.user.role
       setCurrentView(role === 'ADMIN' ? 'admin-dashboard' : 'dashboard')
     }
   }, [status, session, setCurrentView])
+
+  useEffect(() => {
+    handleSessionChange()
+  }, [handleSessionChange])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -48,14 +50,16 @@ export function LoginForm() {
     setIsLoading(true)
 
     try {
+      // APPROACH 1: Try using NextAuth's signIn with redirect: false
       const result = await signIn('credentials', {
         email,
         password,
         redirect: false,
       })
 
+      console.log('[Login] signIn result:', JSON.stringify(result))
+
       if (result?.error) {
-        // NextAuth returned an error
         if (result.error === 'CredentialsSignin') {
           setError('Email o contraseña incorrectos. Verifique sus datos e intente nuevamente.')
         } else {
@@ -65,14 +69,71 @@ export function LoginForm() {
         return
       }
 
-      if (result?.ok) {
-        // Login successful - force a full page reload to ensure session cookie is set
-        window.location.href = '/'
+      // If result.ok is true, the session cookie should be set
+      // Wait a moment for the cookie to be available, then check session
+      if (result?.ok || result === undefined) {
+        // Wait for the session to propagate
+        await new Promise(resolve => setTimeout(resolve, 1000))
+        
+        // Check if session was established
+        const sessionRes = await fetch('/api/auth/session', {
+          credentials: 'include',
+        })
+        const sessionData = await sessionRes.json()
+        console.log('[Login] Session check after signIn:', JSON.stringify(sessionData))
+
+        if (sessionData?.user) {
+          // Session established! Force page reload to sync everything
+          window.location.reload()
+          return
+        }
+
+        // If signIn returned ok but session wasn't established, 
+        // try APPROACH 2: Use our custom login endpoint as fallback
+        console.log('[Login] NextAuth signIn ok but no session, trying custom login...')
+      }
+
+      // APPROACH 2: Custom login endpoint that handles cookies directly
+      const customLoginRes = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+        credentials: 'include',
+      })
+
+      const customLoginData = await customLoginRes.json()
+      console.log('[Login] Custom login result:', JSON.stringify(customLoginData))
+
+      if (!customLoginRes.ok) {
+        setError(customLoginData.error || 'Error al iniciar sesión.')
+        setIsLoading(false)
         return
       }
 
-      // No result returned at all
-      setError('No se recibió respuesta del servidor. Intente nuevamente.')
+      if (customLoginData.success) {
+        // Wait for cookie to be available
+        await new Promise(resolve => setTimeout(resolve, 500))
+        
+        // Verify session
+        const verifyRes = await fetch('/api/auth/session', {
+          credentials: 'include',
+        })
+        const verifyData = await verifyRes.json()
+        console.log('[Login] Session after custom login:', JSON.stringify(verifyData))
+
+        if (verifyData?.user) {
+          window.location.reload()
+          return
+        }
+
+        // Even if session check fails, the cookie might be set
+        // Try a full page reload as last resort
+        console.log('[Login] Session check failed but cookie may be set, reloading...')
+        window.location.reload()
+        return
+      }
+
+      setError('No se pudo iniciar sesión. Intente nuevamente.')
       setIsLoading(false)
     } catch (err) {
       console.error('[Login] Exception:', err)
