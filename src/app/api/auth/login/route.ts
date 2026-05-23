@@ -3,8 +3,9 @@ import bcrypt from 'bcryptjs'
 import { db } from '@/lib/db'
 import { encode } from 'next-auth/jwt'
 
-// Custom login endpoint that works reliably behind reverse proxies
-// Uses NextAuth's own JWT encode function to create a compatible session token
+// Custom login endpoint that works reliably behind reverse proxies.
+// Uses NextAuth's own JWT encode function to create a compatible session token,
+// and sets the session cookie directly in the response.
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
@@ -23,7 +24,6 @@ export async function POST(request: NextRequest) {
     })
 
     if (!user) {
-      console.log('[Login API] User not found:', email)
       return NextResponse.json(
         { error: 'Email o contraseña incorrectos' },
         { status: 401 }
@@ -33,18 +33,18 @@ export async function POST(request: NextRequest) {
     // Verify password
     const isValid = await bcrypt.compare(password, user.password)
     if (!isValid) {
-      console.log('[Login API] Invalid password for:', email)
       return NextResponse.json(
         { error: 'Email o contraseña incorrectos' },
         { status: 401 }
       )
     }
 
-    console.log('[Login API] Login successful:', email, 'Role:', user.role)
+    console.log('[Login API] Success:', email, 'Role:', user.role)
 
     // Create a NextAuth-compatible session token using next-auth/jwt encode
+    // The secret MUST match NEXTAUTH_SECRET in .env
     const secret = process.env.NEXTAUTH_SECRET || 'expense-app-secret-key-2024'
-    
+
     const sessionToken = await encode({
       token: {
         id: user.id,
@@ -52,15 +52,12 @@ export async function POST(request: NextRequest) {
         name: user.name,
         role: user.role,
         sub: user.id,
-        iat: Math.floor(Date.now() / 1000),
-        exp: Math.floor(Date.now() / 1000) + (30 * 24 * 60 * 60),
       },
       secret,
+      maxAge: 30 * 24 * 60 * 60, // 30 days - matches auth-config
     })
 
-    console.log('[Login API] Session token created successfully')
-
-    // Create response
+    // Create response with user data
     const response = NextResponse.json({
       success: true,
       user: {
@@ -71,13 +68,13 @@ export async function POST(request: NextRequest) {
       }
     })
 
-    // Set the session cookie matching NextAuth's format
+    // Set the session cookie - this is what NextAuth reads to determine the session
     response.cookies.set('next-auth.session-token', sessionToken, {
       httpOnly: true,
-      secure: false,
+      secure: false,       // Must be false for HTTP/proxy access
       sameSite: 'lax',
       path: '/',
-      maxAge: 30 * 24 * 60 * 60, // 30 days
+      maxAge: 30 * 24 * 60 * 60,
     })
 
     return response

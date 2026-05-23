@@ -1,7 +1,6 @@
 'use client'
 
 import { useState } from 'react'
-import { signIn } from 'next-auth/react'
 import { motion } from 'framer-motion'
 import { Loader2, UserPlus, Mail, Lock, User, Shield } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -59,20 +58,19 @@ export function RegisterForm() {
 
       toast.success('Cuenta creada exitosamente. Iniciando sesión...')
 
-      // Auto-login after registration
-      const result = await signIn('credentials', {
-        email: email.trim(),
-        password,
-        redirect: false,
+      // Auto-login after registration using our custom endpoint
+      const loginRes = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email.trim(), password }),
+        credentials: 'include',
       })
 
-      if (result?.error) {
-        // If auto-login fails, redirect to login
+      if (loginRes.ok) {
+        window.location.href = '/'
+      } else {
         setCurrentView('login')
         toast.info('Cuenta creada. Por favor inicie sesión manualmente.')
-      } else if (result?.ok) {
-        // Force reload to ensure session is properly set
-        window.location.reload()
       }
     } catch {
       setError('Ocurrió un error al registrar el usuario')
