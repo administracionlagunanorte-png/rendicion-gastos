@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { useSession, signOut } from 'next-auth/react'
+import { useAuth, signOut } from '@/lib/auth-context'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   LayoutDashboard,
@@ -134,11 +134,11 @@ function SidebarContent({
 }
 
 export function AppShell({ children }: { children: React.ReactNode }) {
-  const { data: session } = useSession()
+  const { session } = useAuth()
   const { currentView, setCurrentView } = useAppStore()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
-  const isAdmin = (session?.user as any)?.role === 'ADMIN'
+  const isAdmin = session?.user?.role === 'ADMIN'
 
   // Fetch unread notification count
   const { data: notifData } = useQuery({

@@ -1,6 +1,6 @@
 'use client'
 
-import { useSession } from 'next-auth/react'
+import { useSession } from '@/lib/auth-context'
 import { useQuery } from '@tanstack/react-query'
 import { motion } from 'framer-motion'
 import {

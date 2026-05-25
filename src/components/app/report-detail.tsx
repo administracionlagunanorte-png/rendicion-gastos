@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { useSession } from 'next-auth/react'
+import { useSession } from '@/lib/auth-context'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { motion } from 'framer-motion'
 import {
@@ -94,8 +94,8 @@ export function ReportDetail() {
   const [isActing, setIsActing] = useState(false)
   const [previewImage, setPreviewImage] = useState<string | null>(null)
 
-  const isAdmin = (session?.user as any)?.role === 'ADMIN'
-  const userId = (session?.user as any)?.id
+  const isAdmin = session?.user?.role === 'ADMIN'
+  const userId = session?.user?.id
 
   const { data: report, isLoading } = useQuery({
     queryKey: ['report', selectedReportId],

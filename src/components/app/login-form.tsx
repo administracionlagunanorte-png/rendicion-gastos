@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { useSession } from 'next-auth/react'
+import { useState } from 'react'
+import { useAuth } from '@/lib/auth-context'
 import { motion } from 'framer-motion'
 import { Loader2, LogIn, Mail, Lock, Receipt } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -16,21 +16,7 @@ export function LoginForm() {
   const [error, setError] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const { setCurrentView } = useAppStore()
-  const { status } = useSession()
-
-  // Check for URL error parameters on mount
-  useEffect(() => {
-    const urlParams = new URLSearchParams(window.location.search)
-    const urlError = urlParams.get('error')
-    if (urlError) {
-      if (urlError === 'CredentialsSignin') {
-        setError('Email o contraseña incorrectos.')
-      } else {
-        setError('Error de autenticación. Intente nuevamente.')
-      }
-      window.history.replaceState({}, '', '/')
-    }
-  }, [])
+  const { login, status } = useAuth()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -38,30 +24,17 @@ export function LoginForm() {
     setIsLoading(true)
 
     try {
-      // Use our custom login endpoint which works reliably behind reverse proxies
-      const res = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: email.trim(), password }),
-        credentials: 'include',
-      })
+      const result = await login(email, password)
 
-      const data = await res.json()
-
-      if (!res.ok) {
-        setError(data.error || 'Error al iniciar sesión.')
+      if (result.success) {
+        // Session is already updated by the AuthProvider
+        // No need to reload the page - the status will change to 'authenticated'
+        // and AppContent will show the dashboard
         setIsLoading(false)
         return
       }
 
-      if (data.success) {
-        // Session cookie has been set by the server.
-        // Force a full page reload so NextAuth's SessionProvider picks up the new session.
-        window.location.href = '/'
-        return
-      }
-
-      setError('No se pudo iniciar sesión. Intente nuevamente.')
+      setError(result.error || 'Email o contraseña incorrectos.')
       setIsLoading(false)
     } catch (err) {
       console.error('[Login] Exception:', err)
@@ -70,7 +43,7 @@ export function LoginForm() {
     }
   }
 
-  // Don't render the form if already authenticated (handles edge case after reload)
+  // Don't render the form if already authenticated (handles edge case)
   if (status === 'authenticated') {
     return (
       <div className="min-h-screen flex items-center justify-center">

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { useSession } from 'next-auth/react'
+import { useSession } from '@/lib/auth-context'
 import { useQuery } from '@tanstack/react-query'
 import { motion } from 'framer-motion'
 import {
@@ -38,7 +38,7 @@ export function ReportsList() {
   const { filters, setFilters, resetFilters, setCurrentView, setSelectedReportId } = useAppStore()
   const [page, setPage] = useState(1)
   const pageSize = 10
-  const isAdmin = (session?.user as any)?.role === 'ADMIN'
+  const isAdmin = session?.user?.role === 'ADMIN'
 
   const buildQuery = () => {
     const params = new URLSearchParams()

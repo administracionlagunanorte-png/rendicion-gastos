@@ -1,10 +1,9 @@
 'use client'
 
 import { useEffect } from 'react'
-import { useSession } from 'next-auth/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { SessionProvider } from 'next-auth/react'
 import { Toaster } from 'sonner'
+import { AuthProvider, useAuth } from '@/lib/auth-context'
 import { useAppStore } from '@/lib/store'
 import { LoginForm } from '@/components/app/login-form'
 import { RegisterForm } from '@/components/app/register-form'
@@ -28,7 +27,7 @@ const queryClient = new QueryClient({
 })
 
 function AppContent() {
-  const { data: session, status } = useSession()
+  const { session, status } = useAuth()
   const { currentView, setCurrentView } = useAppStore()
   const [seeding, setSeeding] = useState(false)
 
@@ -131,11 +130,11 @@ function AppContent() {
 
 export default function Home() {
   return (
-    <SessionProvider refetchInterval={5 * 60} refetchOnWindowFocus={true}>
+    <AuthProvider>
       <QueryClientProvider client={queryClient}>
         <AppContent />
         <Toaster position="top-right" richColors closeButton />
       </QueryClientProvider>
-    </SessionProvider>
+    </AuthProvider>
   )
 }

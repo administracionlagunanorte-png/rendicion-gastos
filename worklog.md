@@ -1,22 +1,26 @@
 ---
-Task ID: 3
-Agent: Main
-Task: Complete login system rewrite and thorough testing
+Task ID: 1
+Agent: Main Agent
+Task: Fix login authentication system that was broken behind reverse proxy
 
 Work Log:
-- Identified ROOT CAUSE: NextAuth's signIn() with redirect was broken behind reverse proxy because:
-  1. CSRF cookies pointed to localhost:3000 (inaccessible from browser)
-  2. Redirect after login went to localhost:3000 (browser can't reach it)
-  3. With redirect: false, the session cookie wasn't always set properly through proxy
-- Created custom /api/auth/login endpoint using next-auth/jwt encode() to create compatible session tokens
-- Login form now uses custom endpoint directly (no NextAuth signIn())
-- Removed problematic middleware.ts (was causing deprecation warnings)
-- Simplified auth-config.ts (removed custom cookie definitions that were causing issues)
-- Updated register form to use custom login endpoint for auto-login after registration
-- Ran 15 comprehensive tests covering: direct access, proxy access, wrong credentials, empty fields, new user registration, server stability, session verification - ALL PASSED
+- Analyzed all authentication-related files (NextAuth config, custom login endpoint, login form, middleware, Caddyfile)
+- Discovered that NextAuth's useSession() was failing behind the Caddy reverse proxy because:
+  1. NextAuth's /api/auth/session endpoint set callback-url cookie to http://localhost:3000 instead of the proxy URL
+  2. The SessionProvider/useSession() hook relied on NextAuth's session endpoint which had proxy issues
+  3. The custom login endpoint (/api/auth/login) worked perfectly via curl but the session wasn't detected by NextAuth's client-side code
+- Created a completely custom authentication system that bypasses NextAuth's client-side session management:
+  1. Created /api/auth/me endpoint - reads session cookie directly, returns user data
+  2. Created /api/auth/logout endpoint - clears session cookie
+  3. Created custom AuthProvider and useAuth() hook in src/lib/auth-context.tsx
+  4. Replaced SessionProvider with AuthProvider in src/app/page.tsx
+  5. Updated all components to use custom useAuth()/useSession() instead of next-auth/react
+- Fixed case-insensitive email lookup for SQLite (admin@empresa.com vs ADMIN@EMPRESA.COM)
+- Tested extensively with curl and Playwright browser automation
+- All tests passed: Login, Session Persistence, Logout, Wrong Password handling
 
 Stage Summary:
-- Login system completely rewritten to work reliably behind reverse proxy
-- 15/15 tests passed
-- Server is stable and running
-- Credentials: admin@empresa.com/password123 (ADMIN), maria@empresa.com/password123 (USER), carlos@empresa.com/password123 (USER)
+- Custom auth system works 100% through both direct access and proxy
+- NextAuth's server-side getServerSession() still works for API routes (unchanged)
+- Client-side session management is now fully custom, independent of NextAuth's SessionProvider
+- Credentials: admin@empresa.com / password123 (ADMIN), maria@empresa.com / password123 (USER)

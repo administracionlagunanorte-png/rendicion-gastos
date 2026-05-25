@@ -18,10 +18,18 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Find user
-    const user = await db.user.findUnique({
-      where: { email: email.toLowerCase().trim() }
+    // Find user - try exact match first, then lowercase
+    const trimmedEmail = email.trim()
+    let user = await db.user.findUnique({
+      where: { email: trimmedEmail }
     })
+
+    // If not found, try lowercase version (for case-insensitive email lookup)
+    if (!user) {
+      user = await db.user.findUnique({
+        where: { email: trimmedEmail.toLowerCase() }
+      })
+    }
 
     if (!user) {
       return NextResponse.json(
