@@ -21,19 +21,21 @@ model User {
 }
 
 model ExpenseReport {
-  id          String        @id @default(cuid())
-  title       String
-  description String?
-  status      String        @default("DRAFT")
-  totalAmount Float         @default(0)
-  userId      String
-  user        User          @relation(fields: [userId], references: [id])
-  items       ExpenseItem[]
-  reviewNote  String?
-  reviewedBy  String?
-  reviewedAt  DateTime?
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
+  id           String        @id @default(cuid())
+  title        String
+  description  String?
+  status       String        @default("DRAFT")
+  totalAmount  Float         @default(0)
+  montoRendir  Float         @default(0)
+  numeroBoleta String?
+  userId       String
+  user         User          @relation(fields: [userId], references: [id])
+  items        ExpenseItem[]
+  reviewNote   String?
+  reviewedBy   String?
+  reviewedAt   DateTime?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
 
   @@map("expense_reports")
 }

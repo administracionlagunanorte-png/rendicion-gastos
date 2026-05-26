@@ -60,6 +60,8 @@ export async function GET(request: NextRequest) {
       'Email': r.user.email,
       'Estado': getStatusLabel(r.status),
       'Monto Total': r.totalAmount,
+      'Monto a Rendir': r.montoRendir,
+      'Número de Boleta': r.numeroBoleta || '',
       'Cantidad de Gastos': r.items.length,
       'Nota de Revisión': r.reviewNote || '',
       'Fecha Creación': r.createdAt.toLocaleDateString('es-CL'),
@@ -68,7 +70,7 @@ export async function GET(request: NextRequest) {
     const summaryWs = XLSX.utils.json_to_sheet(summaryData)
     summaryWs['!cols'] = [
       { wch: 25 }, { wch: 30 }, { wch: 40 }, { wch: 20 }, { wch: 25 },
-      { wch: 18 }, { wch: 15 }, { wch: 15 }, { wch: 30 }, { wch: 15 }, { wch: 15 }
+      { wch: 18 }, { wch: 15 }, { wch: 15 }, { wch: 18 }, { wch: 15 }, { wch: 30 }, { wch: 15 }, { wch: 15 }
     ]
     XLSX.utils.book_append_sheet(wb, summaryWs, 'Resumen Rendiciones')
 

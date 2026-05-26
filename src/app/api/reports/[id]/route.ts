@@ -78,7 +78,7 @@ export async function PUT(
 
     const { id } = await params
     const body = await request.json()
-    const { title, description } = body
+    const { title, description, montoRendir, numeroBoleta } = body
     const userRole = session.user.role
     const userId = session.user.id
 
@@ -130,6 +130,8 @@ export async function PUT(
     const updateData: any = {}
     if (title !== undefined) updateData.title = title.trim()
     if (description !== undefined) updateData.description = description?.trim() || null
+    if (montoRendir !== undefined) updateData.montoRendir = parseFloat(montoRendir) || 0
+    if (numeroBoleta !== undefined) updateData.numeroBoleta = numeroBoleta?.trim() || null
 
     const report = await db.expenseReport.update({
       where: { id },

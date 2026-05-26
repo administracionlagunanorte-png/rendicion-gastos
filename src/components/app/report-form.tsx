@@ -59,6 +59,8 @@ export function ReportForm() {
   // Report info
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
+  const [montoRendir, setMontoRendir] = useState('')
+  const [numeroBoleta, setNumeroBoleta] = useState('')
   const [reportSaved, setReportSaved] = useState(false)
   const [reportId, setReportId] = useState<string | null>(selectedReportId)
 
@@ -103,6 +105,8 @@ export function ReportForm() {
     if (report) {
       setTitle(report.title)
       setDescription(report.description || '')
+      setMontoRendir(report.montoRendir ? report.montoRendir.toString() : '')
+      setNumeroBoleta(report.numeroBoleta || '')
       setReportId(report.id)
       setReportSaved(true)
       setSavedItems(
@@ -129,18 +133,25 @@ export function ReportForm() {
 
     setIsSavingReport(true)
     try {
+      const reportData: any = {
+        title: title.trim(),
+        description: description.trim() || null,
+        montoRendir: montoRendir ? parseFloat(montoRendir) : 0,
+        numeroBoleta: numeroBoleta.trim() || null,
+      }
+
       let res: Response
       if (!reportId) {
         res = await fetch('/api/reports', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ title: title.trim(), description: description.trim() || null }),
+          body: JSON.stringify(reportData),
         })
       } else {
         res = await fetch(`/api/reports/${reportId}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ title: title.trim(), description: description.trim() || null }),
+          body: JSON.stringify(reportData),
         })
       }
 
@@ -460,6 +471,35 @@ export function ReportForm() {
               rows={2}
             />
           </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="monto-rendir">Monto a Rendir</Label>
+              <div className="relative">
+                <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                <Input
+                  id="monto-rendir"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  placeholder="0.00"
+                  value={montoRendir}
+                  onChange={(e) => setMontoRendir(e.target.value)}
+                  className="pl-9"
+                />
+              </div>
+              <p className="text-[10px] text-muted-foreground">Monto total que se solicita rendir</p>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="numero-boleta">Número de Boleta</Label>
+              <Input
+                id="numero-boleta"
+                placeholder="Ej: 12345"
+                value={numeroBoleta}
+                onChange={(e) => setNumeroBoleta(e.target.value)}
+              />
+              <p className="text-[10px] text-muted-foreground">Número de boleta o factura asociada</p>
+            </div>
+          </div>
         </CardContent>
       </Card>
 
@@ -658,6 +698,26 @@ export function ReportForm() {
                   ${totalAmount.toLocaleString('es-ES', { minimumFractionDigits: 2 })}
                 </span>
               </div>
+              {montoRendir && parseFloat(montoRendir) > 0 && (
+                <div className="space-y-1 px-1">
+                  <div className="flex items-center justify-between pt-1 border-t border-dashed">
+                    <span className="text-sm text-muted-foreground">Monto a Rendir</span>
+                    <span className="text-lg font-bold text-blue-700">
+                      ${parseFloat(montoRendir).toLocaleString('es-ES', { minimumFractionDigits: 2 })}
+                    </span>
+                  </div>
+                  {(parseFloat(montoRendir) - totalAmount) !== 0 && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-medium">
+                        {parseFloat(montoRendir) > totalAmount ? 'Sobrante' : 'Diferencia'}
+                      </span>
+                      <span className={`text-xs font-bold ${parseFloat(montoRendir) > totalAmount ? 'text-amber-600' : 'text-red-600'}`}>
+                        ${Math.abs(parseFloat(montoRendir) - totalAmount).toLocaleString('es-ES', { minimumFractionDigits: 2 })}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              )}
             </>
           )}
 

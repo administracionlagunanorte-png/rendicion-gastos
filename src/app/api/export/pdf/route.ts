@@ -128,9 +128,17 @@ function generatePDFHtml(report: any): string {
       <p style="font-weight: 600;">${new Date(report.createdAt).toLocaleDateString('es-CL')}</p>
     </div>
     <div>
-      <p style="color: #6b7280; font-size: 12px; margin-bottom: 2px;">Monto Total</p>
+      <p style="color: #6b7280; font-size: 12px; margin-bottom: 2px;">Monto Total Gastos</p>
       <p style="font-weight: 700; color: #059669; font-size: 18px;">$${report.totalAmount.toLocaleString('es-CL')}</p>
     </div>
+    ${report.montoRendir > 0 ? `<div>
+      <p style="color: #6b7280; font-size: 12px; margin-bottom: 2px;">Monto a Rendir</p>
+      <p style="font-weight: 700; color: #059669; font-size: 18px;">$${report.montoRendir.toLocaleString('es-CL')}</p>
+    </div>` : ''}
+    ${report.numeroBoleta ? `<div>
+      <p style="color: #6b7280; font-size: 12px; margin-bottom: 2px;">Número de Boleta</p>
+      <p style="font-weight: 600;">${report.numeroBoleta}</p>
+    </div>` : ''}
   </div>
 
   ${report.description ? `<p style="margin-bottom: 24px; color: #4b5563;"><strong>Descripción:</strong> ${report.description}</p>` : ''}

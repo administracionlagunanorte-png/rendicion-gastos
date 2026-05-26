@@ -100,7 +100,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { title, description, userId } = body
+    const { title, description, userId, montoRendir, numeroBoleta } = body
 
     // Validación
     if (!title || title.trim() === "") {
@@ -148,7 +148,9 @@ export async function POST(request: NextRequest) {
         title: title.trim(),
         description: description?.trim() || null,
         userId: reportUserId,
-        status: "DRAFT"
+        status: "DRAFT",
+        montoRendir: montoRendir !== undefined ? parseFloat(montoRendir) : 0,
+        numeroBoleta: numeroBoleta?.trim() || null,
       },
       include: {
         user: {

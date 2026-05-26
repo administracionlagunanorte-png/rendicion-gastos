@@ -28,6 +28,7 @@ import {
   Receipt,
   Check,
   X,
+  Hash,
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -408,6 +409,13 @@ export function ReportDetail() {
               <span className="text-muted-foreground">Creado:</span>
               <span className="font-medium">{new Date(report.createdAt).toLocaleDateString('es-ES')}</span>
             </div>
+            {report.numeroBoleta && (
+              <div className="flex items-center gap-2">
+                <Hash className="h-3.5 w-3.5 text-muted-foreground" />
+                <span className="text-muted-foreground">Boleta:</span>
+                <span className="font-medium">{report.numeroBoleta}</span>
+              </div>
+            )}
             {report.reviewedAt && (
               <div className="flex items-center gap-2">
                 <Clock className="h-3.5 w-3.5 text-muted-foreground" />
@@ -416,6 +424,20 @@ export function ReportDetail() {
               </div>
             )}
           </div>
+          {/* Monto a Rendir display */}
+          {report.montoRendir > 0 && (
+            <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-3 mt-1">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <DollarSign className="h-4 w-4 text-emerald-600" />
+                  <span className="text-sm font-medium text-emerald-700">Monto a Rendir</span>
+                </div>
+                <span className="text-xl font-bold text-emerald-700">
+                  ${report.montoRendir.toLocaleString('es-ES', { minimumFractionDigits: 2 })}
+                </span>
+              </div>
+            </div>
+          )}
           {report.reviewNote && (
             <div className="bg-muted/50 rounded-lg p-3">
               <div className="flex items-center gap-2 mb-1">
@@ -707,11 +729,33 @@ export function ReportDetail() {
 
           {/* Total */}
           <Separator className="my-4" />
-          <div className="flex items-center justify-between">
-            <span className="text-sm font-semibold">Total</span>
-            <span className="text-2xl font-bold text-emerald-700">
-              ${report.totalAmount.toLocaleString('es-ES', { minimumFractionDigits: 2 })}
-            </span>
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-semibold">Total Gastos</span>
+              <span className="text-2xl font-bold text-emerald-700">
+                ${report.totalAmount.toLocaleString('es-ES', { minimumFractionDigits: 2 })}
+              </span>
+            </div>
+            {report.montoRendir > 0 && (
+              <>
+                <div className="flex items-center justify-between pt-1 border-t border-dashed">
+                  <span className="text-sm font-semibold text-muted-foreground">Monto a Rendir</span>
+                  <span className="text-lg font-bold text-blue-700">
+                    ${report.montoRendir.toLocaleString('es-ES', { minimumFractionDigits: 2 })}
+                  </span>
+                </div>
+                {(report.montoRendir - report.totalAmount) !== 0 && (
+                  <div className="flex items-center justify-between pt-1 border-t border-dashed">
+                    <span className="text-sm font-medium">
+                      {report.montoRendir > report.totalAmount ? 'Sobrante' : 'Diferencia'}
+                    </span>
+                    <span className={`text-sm font-bold ${report.montoRendir > report.totalAmount ? 'text-amber-600' : 'text-red-600'}`}>
+                      ${Math.abs(report.montoRendir - report.totalAmount).toLocaleString('es-ES', { minimumFractionDigits: 2 })}
+                    </span>
+                  </div>
+                )}
+              </>
+            )}
           </div>
         </CardContent>
       </Card>

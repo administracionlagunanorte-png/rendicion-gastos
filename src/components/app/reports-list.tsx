@@ -211,9 +211,21 @@ export function ReportsList() {
                         </div>
                       </div>
                       <div className="flex items-center gap-3 shrink-0">
-                        <span className="text-sm font-bold text-emerald-700">
-                          ${report.totalAmount.toLocaleString('es-ES', { minimumFractionDigits: 2 })}
-                        </span>
+                        <div className="text-right">
+                          <span className="text-sm font-bold text-emerald-700 block">
+                            ${report.totalAmount.toLocaleString('es-ES', { minimumFractionDigits: 2 })}
+                          </span>
+                          {report.montoRendir > 0 && (
+                            <span className="text-[10px] text-muted-foreground block">
+                              Rendir: ${report.montoRendir.toLocaleString('es-ES', { minimumFractionDigits: 2 })}
+                            </span>
+                          )}
+                          {report.numeroBoleta && (
+                            <span className="text-[10px] text-muted-foreground block">
+                              Boleta: {report.numeroBoleta}
+                            </span>
+                          )}
+                        </div>
                         <Badge variant="outline" className={`text-[10px] ${status.color}`}>
                           {status.icon}
                           <span className="ml-1">{status.label}</span>

@@ -72,3 +72,38 @@ Stage Summary:
 - Edit item: amount update, total recalculated ✅
 - Delete item: item removed, total recalculated ✅
 - Server running on port 3000 (proxy 81)
+
+---
+Task ID: 3
+Agent: Main Agent
+Task: Agregar campos "Monto a Rendir" y "Número de Boleta" a la rendición
+
+Work Log:
+- Added `montoRendir` (Float) and `numeroBoleta` (String, nullable) fields to ExpenseReport model in prisma/schema.prisma
+- Ran `prisma db push` to sync the database schema
+- Updated POST /api/reports to accept and store montoRendir and numeroBoleta
+- Updated PUT /api/reports/[id] to accept and update montoRendir and numeroBoleta
+- Updated ReportForm component:
+  - Added state for montoRendir and numeroBoleta
+  - Added form fields in the report info section (Monto a Rendir with $ icon, Número de Boleta)
+  - Pre-populates fields when editing existing report
+  - Shows Monto a Rendir vs Total Gastos comparison with "Sobrante" or "Diferencia" indicator
+- Updated ReportDetail component:
+  - Shows Número de Boleta in report info grid (with Hash icon)
+  - Shows Monto a Rendir in a highlighted emerald card
+  - Shows comparison between Total Gastos and Monto a Rendir with visual difference indicator
+- Updated ReportsList to show montoRendir and numeroBoleta alongside totalAmount
+- Updated Excel export to include "Monto a Rendir" and "Número de Boleta" columns
+- Updated PDF export to include Monto a Rendir and Número de Boleta in the info grid
+- Removed "output: standalone" from next.config.ts (was causing server crashes)
+- Built and tested all API endpoints successfully
+- Verified full flow: create report with new fields, add items, retrieve report, update fields
+
+Stage Summary:
+- Database schema updated with montoRendir and numeroBoleta ✅
+- API routes handle new fields in POST, PUT, GET ✅
+- UI forms and detail views show new fields ✅
+- Export to Excel and PDF includes new fields ✅
+- Full API test: create report with montoRendir=75000, numeroBoleta="B-67890" ✅
+- Update test: montoRendir=80000, numeroBoleta="B-99999" ✅
+- Server running on port 3000
