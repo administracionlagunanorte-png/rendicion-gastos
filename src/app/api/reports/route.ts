@@ -1,21 +1,20 @@
 import { NextRequest, NextResponse } from "next/server"
-import { getServerSession } from "next-auth"
-import { authOptions } from "@/lib/auth-config"
+import { getAuthSession } from "@/lib/auth-helper"
 import { db } from "@/lib/db"
 
 // GET /api/reports - Listar reportes de gastos
 export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user) {
+    const session = await getAuthSession(request)
+    if (!session) {
       return NextResponse.json(
         { error: "No autorizado. Inicie sesión para continuar." },
         { status: 401 }
       )
     }
 
-    const userRole = (session.user as any).role
-    const userId = (session.user as any).id
+    const userRole = session.user.role
+    const userId = session.user.id
     const searchParams = request.nextUrl.searchParams
 
     // Parámetros de filtrado
@@ -92,8 +91,8 @@ export async function GET(request: NextRequest) {
 // POST /api/reports - Crear nuevo reporte de gastos
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user) {
+    const session = await getAuthSession(request)
+    if (!session) {
       return NextResponse.json(
         { error: "No autorizado. Inicie sesión para continuar." },
         { status: 401 }
@@ -119,9 +118,9 @@ export async function POST(request: NextRequest) {
     }
 
     // Determinar el userId del reporte
-    const reportUserId = userId || (session.user as any).id
-    const sessionUserId = (session.user as any).id
-    const userRole = (session.user as any).role
+    const reportUserId = userId || session.user.id
+    const sessionUserId = session.user.id
+    const userRole = session.user.role
 
     // Solo admin puede crear reportes para otros usuarios
     if (reportUserId !== sessionUserId && userRole !== "ADMIN") {

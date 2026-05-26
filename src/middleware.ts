@@ -8,7 +8,7 @@ export function middleware(request: NextRequest) {
   if (request.nextUrl.pathname.startsWith('/api/auth')) {
     const forwardedHost = request.headers.get('x-forwarded-host')
     const forwardedProto = request.headers.get('x-forwarded-proto') || 'http'
-    
+
     if (forwardedHost) {
       const detectedUrl = `${forwardedProto}://${forwardedHost}`
       if (process.env.NEXTAUTH_URL !== detectedUrl) {
@@ -17,7 +17,7 @@ export function middleware(request: NextRequest) {
       }
     }
   }
-  
+
   return NextResponse.next()
 }
 

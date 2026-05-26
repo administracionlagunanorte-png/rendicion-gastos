@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import { getServerSession } from "next-auth"
-import { authOptions } from "@/lib/auth-config"
+import { getAuthSession } from "@/lib/auth-helper"
 import { db } from "@/lib/db"
 
 // PUT /api/items/[id] - Actualizar un item de gasto
@@ -9,8 +8,8 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user) {
+    const session = await getAuthSession(request)
+    if (!session) {
       return NextResponse.json(
         { error: "No autorizado. Inicie sesión para continuar." },
         { status: 401 }
@@ -20,8 +19,8 @@ export async function PUT(
     const { id } = await params
     const body = await request.json()
     const { description, amount, category, expenseDate, imageUrl } = body
-    const userId = (session.user as any).id
-    const userRole = (session.user as any).role
+    const userId = session.user.id
+    const userRole = session.user.role
 
     // Verificar que el item existe
     const existingItem = await db.expenseItem.findUnique({
@@ -103,8 +102,8 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user) {
+    const session = await getAuthSession(request)
+    if (!session) {
       return NextResponse.json(
         { error: "No autorizado. Inicie sesión para continuar." },
         { status: 401 }
@@ -112,8 +111,8 @@ export async function DELETE(
     }
 
     const { id } = await params
-    const userId = (session.user as any).id
-    const userRole = (session.user as any).role
+    const userId = session.user.id
+    const userRole = session.user.role
 
     // Verificar que el item existe
     const existingItem = await db.expenseItem.findUnique({

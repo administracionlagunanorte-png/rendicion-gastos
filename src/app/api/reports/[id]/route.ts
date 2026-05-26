@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import { getServerSession } from "next-auth"
-import { authOptions } from "@/lib/auth-config"
+import { getAuthSession } from "@/lib/auth-helper"
 import { db } from "@/lib/db"
 
 // GET /api/reports/[id] - Obtener un reporte por ID
@@ -9,8 +8,8 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user) {
+    const session = await getAuthSession(request)
+    if (!session) {
       return NextResponse.json(
         { error: "No autorizado. Inicie sesión para continuar." },
         { status: 401 }
@@ -18,8 +17,8 @@ export async function GET(
     }
 
     const { id } = await params
-    const userRole = (session.user as any).role
-    const userId = (session.user as any).id
+    const userRole = session.user.role
+    const userId = session.user.id
 
     const report = await db.expenseReport.findUnique({
       where: { id },
@@ -69,8 +68,8 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user) {
+    const session = await getAuthSession(request)
+    if (!session) {
       return NextResponse.json(
         { error: "No autorizado. Inicie sesión para continuar." },
         { status: 401 }
@@ -80,8 +79,8 @@ export async function PUT(
     const { id } = await params
     const body = await request.json()
     const { title, description } = body
-    const userRole = (session.user as any).role
-    const userId = (session.user as any).id
+    const userRole = session.user.role
+    const userId = session.user.id
 
     // Verificar que el reporte existe
     const existingReport = await db.expenseReport.findUnique({
@@ -166,8 +165,8 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user) {
+    const session = await getAuthSession(request)
+    if (!session) {
       return NextResponse.json(
         { error: "No autorizado. Inicie sesión para continuar." },
         { status: 401 }
@@ -177,8 +176,8 @@ export async function PATCH(
     const { id } = await params
     const body = await request.json()
     const { status, reviewNote } = body
-    const userRole = (session.user as any).role
-    const userId = (session.user as any).id
+    const userRole = session.user.role
+    const userId = session.user.id
 
     // Validar estado
     const validStatuses = ["SUBMITTED", "APPROVED", "REJECTED", "MODIFICATION_REQUESTED"]
@@ -329,8 +328,8 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user) {
+    const session = await getAuthSession(request)
+    if (!session) {
       return NextResponse.json(
         { error: "No autorizado. Inicie sesión para continuar." },
         { status: 401 }
@@ -338,8 +337,8 @@ export async function DELETE(
     }
 
     const { id } = await params
-    const userRole = (session.user as any).role
-    const userId = (session.user as any).id
+    const userRole = session.user.role
+    const userId = session.user.id
 
     // Verificar que el reporte existe
     const existingReport = await db.expenseReport.findUnique({

@@ -1,21 +1,20 @@
-import { NextResponse } from "next/server"
-import { getServerSession } from "next-auth"
-import { authOptions } from "@/lib/auth-config"
+import { NextRequest, NextResponse } from "next/server"
+import { getAuthSession } from "@/lib/auth-helper"
 import { db } from "@/lib/db"
 
 // GET /api/stats - Obtener estadísticas del dashboard
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user) {
+    const session = await getAuthSession(request)
+    if (!session) {
       return NextResponse.json(
         { error: "No autorizado. Inicie sesión para continuar." },
         { status: 401 }
       )
     }
 
-    const userRole = (session.user as any).role
-    const userId = (session.user as any).id
+    const userRole = session.user.role
+    const userId = session.user.id
 
     if (userRole === "ADMIN") {
       // Estadísticas para administrador
