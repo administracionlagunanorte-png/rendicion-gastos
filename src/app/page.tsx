@@ -13,6 +13,8 @@ import { ReportForm } from '@/components/app/report-form'
 import { ReportDetail } from '@/components/app/report-detail'
 import { ReportsList } from '@/components/app/reports-list'
 import { NotificationsPanel } from '@/components/app/notifications-panel'
+import { UsersPanel } from '@/components/app/users-panel'
+import { UserProfile } from '@/components/app/user-profile'
 import { Button } from '@/components/ui/button'
 import { Database, Loader2 } from 'lucide-react'
 import { useState } from 'react'
@@ -116,6 +118,10 @@ function AppContent() {
         return <ReportDetail />
       case 'notifications':
         return <NotificationsPanel />
+      case 'users':
+        return <UsersPanel />
+      case 'profile':
+        return <UserProfile />
       default:
         return <ReportsList />
     }

@@ -13,6 +13,8 @@ import {
   Receipt,
   Shield,
   ChevronRight,
+  Users,
+  UserCircle,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -172,6 +174,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       icon: <Bell className="h-4 w-4" />,
       view: 'notifications',
     },
+    {
+      id: 'profile',
+      label: 'Mi Perfil',
+      icon: <UserCircle className="h-4 w-4" />,
+      view: 'profile',
+    },
   ]
 
   const adminNavItems: NavItem[] = [
@@ -188,10 +196,22 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       view: 'dashboard',
     },
     {
+      id: 'users',
+      label: 'Usuarios',
+      icon: <Users className="h-4 w-4" />,
+      view: 'users',
+    },
+    {
       id: 'notifications',
       label: 'Notificaciones',
       icon: <Bell className="h-4 w-4" />,
       view: 'notifications',
+    },
+    {
+      id: 'profile',
+      label: 'Mi Perfil',
+      icon: <UserCircle className="h-4 w-4" />,
+      view: 'profile',
     },
   ]
 

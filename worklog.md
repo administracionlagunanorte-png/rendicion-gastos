@@ -107,3 +107,55 @@ Stage Summary:
 - Full API test: create report with montoRendir=75000, numeroBoleta="B-67890" ✅
 - Update test: montoRendir=80000, numeroBoleta="B-99999" ✅
 - Server running on port 3000
+
+---
+Task ID: 4
+Agent: Main Agent
+Task: Agregar creación de usuarios en perfil de administrador y cambio de claves en perfil de usuario
+
+Work Log:
+- Created API route GET/POST /api/users (admin-only):
+  - GET: Lists all users with search, includes report count per user
+  - POST: Creates new user with name, email, password, role (USER/ADMIN)
+  - Validates email format, password min length, duplicate email check
+- Created API route DELETE /api/users/[id] (admin-only):
+  - Cannot delete self
+  - Cascade deletes user's reports and notifications
+- Created API route PATCH /api/auth/change-password:
+  - Requires current password verification
+  - New password min 6 chars, must differ from current
+  - Uses bcrypt for hashing
+- Created UsersPanel component:
+  - Stats cards: Total Users, Admins, Regular Users
+  - Search by name or email
+  - User list with avatars, roles, email, report count, creation date
+  - Create user dialog with name, email, password, role selection
+  - Delete user with confirmation dialog
+- Created UserProfile component:
+  - Profile info card with name, email, role, avatar
+  - Admin permission notice for admin users
+  - Change password form with current/new/confirm fields
+  - Show/hide password toggles
+  - Password strength indicator (5 levels)
+  - Visual confirmation of matching passwords
+- Updated store.ts with 'users' and 'profile' views
+- Updated app-shell.tsx navigation:
+  - Added "Usuarios" nav item for admin
+  - Added "Mi Perfil" nav item for all users
+- Updated page.tsx to render UsersPanel and UserProfile views
+- All API tests passed:
+  - Admin can list users ✅
+  - Admin can create users ✅
+  - Admin can delete users ✅
+  - Regular user cannot access users API (403) ✅
+  - Regular user cannot create users (403) ✅
+  - Password change with correct current password ✅
+  - Password change with wrong current password (error) ✅
+  - Search users by name ✅
+
+Stage Summary:
+- Admin user management: list, create, delete users ✅
+- User password change with validation ✅
+- Permission checks enforced (admin-only for user management) ✅
+- UI components integrated into navigation ✅
+- Server running on port 3000
