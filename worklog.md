@@ -159,3 +159,29 @@ Stage Summary:
 - Permission checks enforced (admin-only for user management) ✅
 - UI components integrated into navigation ✅
 - Server running on port 3000
+---
+Task ID: 1
+Agent: Main Agent
+Task: Allow administrators to create and manage their own expense reports
+
+Work Log:
+- Read all key project files to understand current state
+- Analyzed that photo upload feature was already fully implemented from previous session
+- Added "Nueva Rendición" nav item to admin sidebar in app-shell.tsx
+- Added "Mis Rendiciones" nav item to admin sidebar for filtering admin's own reports
+- Removed isAdmin check that hid the "Nueva" button in reports-list.tsx
+- Added "Nueva Rendición" button to admin-dashboard.tsx header
+- Updated report-detail.tsx: changed canEdit/canSubmit logic from `!isAdmin && isOwner` to just `isOwner`, so admins can edit their own reports
+- Updated canReview logic to `isAdmin && !isOwner` so admins can't review their own reports
+- Added `myReportsOnly` prop to ReportsList component for admin's "Mis Rendiciones" view
+- Added `my-reports` view type to store.ts
+- Added `my-reports` case to page.tsx rendering
+- Build passes cleanly, server restarts successfully
+
+Stage Summary:
+- Admins can now create expense reports from sidebar, admin dashboard, and reports list
+- Admins can edit/submit their own reports (same as regular users)
+- Admins can NOT review their own reports (must be reviewed by another admin)
+- "Mis Rendiciones" section shows only the admin's own reports
+- Photo upload feature was already implemented and working
+- All data fields are already mandatory (imageUrl required in API validation)

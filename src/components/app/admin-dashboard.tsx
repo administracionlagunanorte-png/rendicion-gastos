@@ -14,6 +14,7 @@ import {
   FileEdit,
   TrendingUp,
   Eye,
+  PlusCircle,
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -131,14 +132,23 @@ export function AdminDashboard() {
           <h2 className="text-2xl font-bold">Panel de Administración</h2>
           <p className="text-muted-foreground mt-1">Gestiona y revisa todas las rendiciones de gastos</p>
         </div>
-        <Button
-          onClick={handleExportAll}
-          variant="outline"
-          className="shadow-sm"
-        >
-          <Download className="mr-2 h-4 w-4" />
-          Exportar Todo
-        </Button>
+        <div className="flex gap-2">
+          <Button
+            onClick={() => setCurrentView('create-report')}
+            className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm"
+          >
+            <PlusCircle className="mr-2 h-4 w-4" />
+            Nueva Rendición
+          </Button>
+          <Button
+            onClick={handleExportAll}
+            variant="outline"
+            className="shadow-sm"
+          >
+            <Download className="mr-2 h-4 w-4" />
+            Exportar Todo
+          </Button>
+        </div>
       </div>
 
       {/* Stats Cards */}

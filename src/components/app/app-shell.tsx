@@ -198,6 +198,18 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       view: 'dashboard',
     },
     {
+      id: 'my-reports',
+      label: 'Mis Rendiciones',
+      icon: <Receipt className="h-4 w-4" />,
+      view: 'my-reports',
+    },
+    {
+      id: 'create-report',
+      label: 'Nueva Rendición',
+      icon: <PlusCircle className="h-4 w-4" />,
+      view: 'create-report',
+    },
+    {
       id: 'users',
       label: 'Usuarios',
       icon: <Users className="h-4 w-4" />,

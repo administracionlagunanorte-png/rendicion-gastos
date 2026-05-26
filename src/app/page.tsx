@@ -108,6 +108,8 @@ function AppContent() {
     switch (currentView) {
       case 'dashboard':
         return <ReportsList />
+      case 'my-reports':
+        return <ReportsList myReportsOnly />
       case 'admin-dashboard':
         return <AdminDashboard />
       case 'create-report':

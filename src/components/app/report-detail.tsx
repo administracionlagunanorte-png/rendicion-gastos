@@ -345,9 +345,10 @@ export function ReportDetail() {
   }
 
   const status = statusConfig[report.status] || statusConfig.DRAFT
-  const canEdit = !isAdmin && report.userId === userId && ['DRAFT', 'MODIFICATION_REQUESTED'].includes(report.status)
-  const canSubmit = !isAdmin && report.userId === userId && ['DRAFT', 'MODIFICATION_REQUESTED'].includes(report.status) && report.items?.length > 0
-  const canReview = isAdmin && ['SUBMITTED', 'MODIFICATION_REQUESTED'].includes(report.status)
+  const isOwner = report.userId === userId
+  const canEdit = isOwner && ['DRAFT', 'MODIFICATION_REQUESTED'].includes(report.status)
+  const canSubmit = isOwner && ['DRAFT', 'MODIFICATION_REQUESTED'].includes(report.status) && report.items?.length > 0
+  const canReview = isAdmin && !isOwner && ['SUBMITTED', 'MODIFICATION_REQUESTED'].includes(report.status)
 
   return (
     <div className="space-y-6 max-w-3xl">
