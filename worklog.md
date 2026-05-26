@@ -41,3 +41,34 @@ Stage Summary:
 - Auth context now has proper race condition protection
 - Both USER and ADMIN login work correctly
 - Server is running and ready at port 3000 (proxy at 81)
+
+---
+Task ID: 2
+Agent: Main Agent
+Task: Agregar capacidad de subir varios gastos a una sola rendición, cada gasto ingresado de forma independiente
+
+Work Log:
+- Analyzed current ReportForm component - it had a single-form approach where all items were edited at once
+- Created `/api/upload` endpoint for image file uploads (was missing, ImageUpload component referenced it)
+- Completely redesigned ReportForm with new flow:
+  1. Step 1: Create/save rendición header (title + description) → creates as DRAFT
+  2. Step 2: Add gastos one by one, each saved immediately to backend
+  3. Each gasto has its own card with description, amount, category, date, receipt
+  4. Running total displayed
+  5. Submit for review when ready
+- Enhanced ReportDetail with inline item management:
+  - "Agregar Gasto" button for DRAFT/MODIFICATION_REQUESTED reports
+  - Inline add form with all fields
+  - Edit existing items inline
+  - Delete items with confirmation
+  - View receipt images in dialog
+- All items now use emoji icons for categories for better visual identification
+- Added real-time validation for item forms
+- Each CRUD operation on items is immediate (saved to backend instantly)
+
+Stage Summary:
+- Complete flow tested: login → create report → add 3 expenses → submit for review ✅
+- Image upload working: file saved to /public/uploads, accessible via URL ✅
+- Edit item: amount update, total recalculated ✅
+- Delete item: item removed, total recalculated ✅
+- Server running on port 3000 (proxy 81)

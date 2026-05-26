@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { useSession } from '@/lib/auth-context'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { motion } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
 import {
   ArrowLeft,
   Clock,
@@ -21,13 +21,21 @@ import {
   ThumbsUp,
   ThumbsDown,
   Edit3,
-  ImageIcon,
+  PlusCircle,
+  Trash2,
+  Loader2,
+  Paperclip,
+  Receipt,
+  Check,
+  X,
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Textarea } from '@/components/ui/textarea'
+import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Separator } from '@/components/ui/separator'
 import { Skeleton } from '@/components/ui/skeleton'
 import {
@@ -40,14 +48,24 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog'
 import { useAppStore } from '@/lib/store'
+import { ImageUpload } from './image-upload'
 import { toast } from 'sonner'
+
+const CATEGORIES = [
+  { value: 'Alimentación', label: '🍽️ Alimentación' },
+  { value: 'Transporte', label: '🚗 Transporte' },
+  { value: 'Alojamiento', label: '🏨 Alojamiento' },
+  { value: 'Entretenimiento', label: '🎭 Entretenimiento' },
+  { value: 'Oficina', label: '📎 Oficina' },
+  { value: 'Otro', label: '📦 Otro' },
+]
 
 const statusConfig: Record<string, { label: string; color: string; icon: React.ReactNode; description: string }> = {
   DRAFT: {
     label: 'Borrador',
     color: 'bg-gray-100 text-gray-700 border-gray-200',
     icon: <FileEdit className="h-4 w-4" />,
-    description: 'La rendición está en edición',
+    description: 'La rendición está en edición. Puede agregar más gastos.',
   },
   SUBMITTED: {
     label: 'Enviado',
@@ -71,7 +89,7 @@ const statusConfig: Record<string, { label: string; color: string; icon: React.R
     label: 'Modificación Solicitada',
     color: 'bg-orange-50 text-orange-700 border-orange-200',
     icon: <AlertTriangle className="h-4 w-4" />,
-    description: 'Se han solicitado modificaciones',
+    description: 'Se han solicitado modificaciones. Puede editar los gastos.',
   },
 }
 
@@ -82,7 +100,6 @@ const categoryLabels: Record<string, string> = {
   'Entretenimiento': 'Entretenimiento',
   'Oficina': 'Oficina',
   'Otro': 'Otro',
-  'Capacitación': 'Capacitación',
 }
 
 export function ReportDetail() {
@@ -93,6 +110,25 @@ export function ReportDetail() {
   const [actionDialog, setActionDialog] = useState<string | null>(null)
   const [isActing, setIsActing] = useState(false)
   const [previewImage, setPreviewImage] = useState<string | null>(null)
+
+  // Add item form
+  const [showAddForm, setShowAddForm] = useState(false)
+  const [itemDescription, setItemDescription] = useState('')
+  const [itemAmount, setItemAmount] = useState('')
+  const [itemCategory, setItemCategory] = useState('Alimentación')
+  const [itemDate, setItemDate] = useState(new Date().toISOString().split('T')[0])
+  const [itemImageUrl, setItemImageUrl] = useState<string | null>(null)
+  const [isAddingItem, setIsAddingItem] = useState(false)
+
+  // Edit item
+  const [editingItemId, setEditingItemId] = useState<string | null>(null)
+  const [editDescription, setEditDescription] = useState('')
+  const [editAmount, setEditAmount] = useState('')
+  const [editCategory, setEditCategory] = useState('')
+  const [editDate, setEditDate] = useState('')
+  const [editImageUrl, setEditImageUrl] = useState<string | null>(null)
+  const [isUpdatingItem, setIsUpdatingItem] = useState(false)
+  const [isDeletingItem, setIsDeletingItem] = useState<string | null>(null)
 
   const isAdmin = session?.user?.role === 'ADMIN'
   const userId = session?.user?.id
@@ -173,6 +209,119 @@ export function ReportDetail() {
     } catch {
       toast.error('Error al exportar la rendición')
     }
+  }
+
+  // Add new item
+  const addItem = async () => {
+    if (!itemDescription.trim() || !itemAmount || parseFloat(itemAmount) <= 0) {
+      toast.error('Complete descripción y monto')
+      return
+    }
+
+    setIsAddingItem(true)
+    try {
+      const res = await fetch('/api/items', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          description: itemDescription.trim(),
+          amount: parseFloat(itemAmount),
+          category: itemCategory,
+          expenseDate: itemDate,
+          imageUrl: itemImageUrl,
+          reportId: selectedReportId,
+        }),
+      })
+
+      if (!res.ok) {
+        const data = await res.json()
+        throw new Error(data.error || 'Error al agregar gasto')
+      }
+
+      toast.success('Gasto agregado')
+      setItemDescription('')
+      setItemAmount('')
+      setItemCategory('Alimentación')
+      setItemDate(new Date().toISOString().split('T')[0])
+      setItemImageUrl(null)
+      setShowAddForm(false)
+
+      queryClient.invalidateQueries({ queryKey: ['report', selectedReportId] })
+      queryClient.invalidateQueries({ queryKey: ['reports'] })
+      queryClient.invalidateQueries({ queryKey: ['stats'] })
+    } catch (err: any) {
+      toast.error(err.message || 'Error al agregar el gasto')
+    } finally {
+      setIsAddingItem(false)
+    }
+  }
+
+  // Start editing item
+  const startEditItem = (item: any) => {
+    setEditingItemId(item.id)
+    setEditDescription(item.description)
+    setEditAmount(item.amount.toString())
+    setEditCategory(item.category)
+    setEditDate(new Date(item.expenseDate).toISOString().split('T')[0])
+    setEditImageUrl(item.imageUrl)
+  }
+
+  // Save edited item
+  const saveEditItem = async () => {
+    if (!editingItemId) return
+    setIsUpdatingItem(true)
+    try {
+      const res = await fetch(`/api/items/${editingItemId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          description: editDescription.trim(),
+          amount: parseFloat(editAmount),
+          category: editCategory,
+          expenseDate: editDate,
+          imageUrl: editImageUrl,
+        }),
+      })
+      if (!res.ok) {
+        const data = await res.json()
+        throw new Error(data.error || 'Error al actualizar')
+      }
+      toast.success('Gasto actualizado')
+      setEditingItemId(null)
+      queryClient.invalidateQueries({ queryKey: ['report', selectedReportId] })
+      queryClient.invalidateQueries({ queryKey: ['reports'] })
+      queryClient.invalidateQueries({ queryKey: ['stats'] })
+    } catch (err: any) {
+      toast.error(err.message || 'Error al actualizar el gasto')
+    } finally {
+      setIsUpdatingItem(false)
+    }
+  }
+
+  // Delete item
+  const deleteItem = async (itemId: string) => {
+    setIsDeletingItem(itemId)
+    try {
+      const res = await fetch(`/api/items/${itemId}`, { method: 'DELETE' })
+      if (!res.ok) {
+        const data = await res.json()
+        throw new Error(data.error || 'Error al eliminar')
+      }
+      toast.success('Gasto eliminado')
+      if (editingItemId === itemId) setEditingItemId(null)
+      queryClient.invalidateQueries({ queryKey: ['report', selectedReportId] })
+      queryClient.invalidateQueries({ queryKey: ['reports'] })
+      queryClient.invalidateQueries({ queryKey: ['stats'] })
+    } catch (err: any) {
+      toast.error(err.message || 'Error al eliminar el gasto')
+    } finally {
+      setIsDeletingItem(null)
+    }
+  }
+
+  const getCategoryEmoji = (cat: string) => {
+    const found = CATEGORIES.find(c => c.value === cat)
+    return found ? found.label.split(' ')[0] : '📦'
   }
 
   if (isLoading) {
@@ -287,59 +436,270 @@ export function ReportDetail() {
               <DollarSign className="h-4 w-4 text-emerald-600" />
               Detalle de Gastos
             </CardTitle>
-            <Badge className="bg-emerald-600 text-white border-0">
-              {report.items?.length || 0} {report.items?.length === 1 ? 'gasto' : 'gastos'}
-            </Badge>
+            <div className="flex items-center gap-2">
+              <Badge className="bg-emerald-600 text-white border-0">
+                {report.items?.length || 0} {report.items?.length === 1 ? 'gasto' : 'gastos'}
+              </Badge>
+              {canEdit && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="text-emerald-600 border-emerald-200 hover:bg-emerald-50 text-xs"
+                  onClick={() => setShowAddForm(!showAddForm)}
+                >
+                  <PlusCircle className="h-3.5 w-3.5 mr-1" />
+                  Agregar Gasto
+                </Button>
+              )}
+            </div>
           </div>
         </CardHeader>
         <CardContent>
-          {report.items?.length === 0 ? (
+          {/* Add Item Form (inline) */}
+          {canEdit && showAddForm && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              className="mb-4 border-2 border-dashed border-emerald-200 rounded-lg p-4 bg-emerald-50/30 space-y-3"
+            >
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium text-emerald-700 flex items-center gap-1">
+                  <PlusCircle className="h-4 w-4" />
+                  Nuevo Gasto
+                </span>
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  className="h-7 w-7"
+                  onClick={() => setShowAddForm(false)}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="space-y-1 sm:col-span-2">
+                  <Label className="text-xs">Descripción *</Label>
+                  <Input
+                    placeholder="Ej: Almuerzo con cliente"
+                    value={itemDescription}
+                    onChange={(e) => setItemDescription(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Monto *</Label>
+                  <div className="relative">
+                    <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                    <Input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      placeholder="0.00"
+                      value={itemAmount}
+                      onChange={(e) => setItemAmount(e.target.value)}
+                      className="pl-9"
+                    />
+                  </div>
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Categoría *</Label>
+                  <Select value={itemCategory} onValueChange={setItemCategory}>
+                    <SelectTrigger className="text-xs">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {CATEGORIES.map((cat) => (
+                        <SelectItem key={cat.value} value={cat.value}>
+                          {cat.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Fecha *</Label>
+                  <Input
+                    type="date"
+                    value={itemDate}
+                    onChange={(e) => setItemDate(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Comprobante</Label>
+                  <ImageUpload
+                    value={itemImageUrl}
+                    onChange={setItemImageUrl}
+                  />
+                </div>
+              </div>
+              <Button
+                onClick={addItem}
+                disabled={isAddingItem}
+                className="w-full bg-emerald-600 hover:bg-emerald-700 text-white"
+              >
+                {isAddingItem ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <PlusCircle className="mr-2 h-4 w-4" />
+                )}
+                Agregar Gasto
+              </Button>
+            </motion.div>
+          )}
+
+          {/* Items List */}
+          {report.items?.length === 0 && !showAddForm ? (
             <div className="text-center py-6">
               <DollarSign className="h-10 w-10 mx-auto text-muted-foreground/30 mb-2" />
               <p className="text-sm text-muted-foreground">No hay gastos registrados</p>
+              {canEdit && (
+                <Button
+                  variant="link"
+                  className="text-emerald-600 mt-1"
+                  onClick={() => setShowAddForm(true)}
+                >
+                  Agregar primer gasto
+                </Button>
+              )}
             </div>
           ) : (
-            <div className="space-y-3">
+            <div className="space-y-2">
               {report.items?.map((item: any, index: number) => (
                 <motion.div
                   key={item.id}
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.2, delay: index * 0.05 }}
-                  className="border rounded-lg p-4 hover:bg-muted/30 transition-colors"
+                  className={`border rounded-lg p-3 transition-colors ${
+                    editingItemId === item.id
+                      ? 'border-emerald-300 bg-emerald-50/30'
+                      : 'hover:bg-muted/30'
+                  }`}
                 >
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium">{item.description}</p>
-                      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1.5">
-                        <span className="text-xs text-muted-foreground flex items-center gap-1">
-                          <span className="inline-block w-2 h-2 rounded-full bg-emerald-400" />
-                          {categoryLabels[item.category] || item.category}
-                        </span>
-                        <span className="text-xs text-muted-foreground flex items-center gap-1">
-                          <Calendar className="h-3 w-3" />
-                          {new Date(item.expenseDate).toLocaleDateString('es-ES')}
-                        </span>
+                  {editingItemId === item.id ? (
+                    /* Edit Mode */
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-medium text-emerald-700">Editando gasto</span>
+                        <div className="flex gap-1">
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            className="h-7 w-7 text-emerald-600 hover:bg-emerald-50"
+                            onClick={saveEditItem}
+                            disabled={isUpdatingItem}
+                          >
+                            {isUpdatingItem ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
+                          </Button>
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            className="h-7 w-7 text-muted-foreground hover:bg-muted"
+                            onClick={() => setEditingItemId(null)}
+                            disabled={isUpdatingItem}
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div className="space-y-1 sm:col-span-2">
+                          <Label className="text-xs">Descripción</Label>
+                          <Input value={editDescription} onChange={(e) => setEditDescription(e.target.value)} />
+                        </div>
+                        <div className="space-y-1">
+                          <Label className="text-xs">Monto</Label>
+                          <div className="relative">
+                            <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                            <Input type="number" step="0.01" value={editAmount} onChange={(e) => setEditAmount(e.target.value)} className="pl-9" />
+                          </div>
+                        </div>
+                        <div className="space-y-1">
+                          <Label className="text-xs">Categoría</Label>
+                          <Select value={editCategory} onValueChange={setEditCategory}>
+                            <SelectTrigger className="text-xs"><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                              {CATEGORIES.map((cat) => (
+                                <SelectItem key={cat.value} value={cat.value}>{cat.label}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="space-y-1">
+                          <Label className="text-xs">Fecha</Label>
+                          <Input type="date" value={editDate} onChange={(e) => setEditDate(e.target.value)} />
+                        </div>
+                        <div className="space-y-1">
+                          <Label className="text-xs">Comprobante</Label>
+                          <ImageUpload value={editImageUrl} onChange={setEditImageUrl} />
+                        </div>
                       </div>
                     </div>
-                    <div className="flex items-center gap-2 shrink-0">
-                      <span className="text-base font-bold text-emerald-700">
-                        ${item.amount.toLocaleString('es-ES', { minimumFractionDigits: 2 })}
-                      </span>
-                      {item.imageUrl && (
-                        <button
-                          onClick={() => setPreviewImage(item.imageUrl)}
-                          className="w-10 h-10 rounded-md overflow-hidden border hover:ring-2 hover:ring-emerald-300 transition-all"
-                        >
-                          <img
-                            src={item.imageUrl}
-                            alt="Comprobante"
-                            className="w-full h-full object-cover"
-                          />
-                        </button>
-                      )}
+                  ) : (
+                    /* Display Mode */
+                    <div className="flex items-start gap-3">
+                      <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center text-sm shrink-0">
+                        {getCategoryEmoji(item.category)}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-start justify-between gap-2">
+                          <div>
+                            <p className="text-sm font-medium">{item.description}</p>
+                            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-0.5">
+                              <span className="text-xs text-muted-foreground flex items-center gap-1">
+                                <span className="inline-block w-2 h-2 rounded-full bg-emerald-400" />
+                                {categoryLabels[item.category] || item.category}
+                              </span>
+                              <span className="text-xs text-muted-foreground flex items-center gap-1">
+                                <Calendar className="h-3 w-3" />
+                                {new Date(item.expenseDate).toLocaleDateString('es-ES')}
+                              </span>
+                              {item.imageUrl && (
+                                <button
+                                  onClick={() => setPreviewImage(item.imageUrl)}
+                                  className="text-xs text-emerald-600 flex items-center gap-0.5 hover:underline"
+                                >
+                                  <Paperclip className="h-3 w-3" />
+                                  Ver comprobante
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2 shrink-0">
+                            <span className="text-base font-bold text-emerald-700">
+                              ${item.amount.toLocaleString('es-ES', { minimumFractionDigits: 2 })}
+                            </span>
+                            {canEdit && (
+                              <div className="flex gap-0.5">
+                                <Button
+                                  size="icon"
+                                  variant="ghost"
+                                  className="h-7 w-7 text-muted-foreground hover:text-emerald-600 hover:bg-emerald-50"
+                                  onClick={() => startEditItem(item)}
+                                  disabled={isDeletingItem === item.id}
+                                >
+                                  <Edit3 className="h-3.5 w-3.5" />
+                                </Button>
+                                <Button
+                                  size="icon"
+                                  variant="ghost"
+                                  className="h-7 w-7 text-muted-foreground hover:text-red-600 hover:bg-red-50"
+                                  onClick={() => deleteItem(item.id)}
+                                  disabled={isDeletingItem === item.id}
+                                >
+                                  {isDeletingItem === item.id ? (
+                                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                  ) : (
+                                    <Trash2 className="h-3.5 w-3.5" />
+                                  )}
+                                </Button>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
                     </div>
-                  </div>
+                  )}
                 </motion.div>
               ))}
             </div>
@@ -401,7 +761,7 @@ export function ReportDetail() {
                       onClick={() => handleStatusChange('APPROVED')}
                       disabled={isActing}
                     >
-                      {isActing ? <span className="animate-spin mr-2">⏳</span> : null}
+                      {isActing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
                       Confirmar Aprobación
                     </Button>
                   </DialogFooter>
@@ -433,7 +793,7 @@ export function ReportDetail() {
                       onClick={() => handleStatusChange('REJECTED')}
                       disabled={isActing}
                     >
-                      {isActing ? <span className="animate-spin mr-2">⏳</span> : null}
+                      {isActing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
                       Confirmar Rechazo
                     </Button>
                   </DialogFooter>
@@ -466,7 +826,7 @@ export function ReportDetail() {
                       onClick={() => handleStatusChange('MODIFICATION_REQUESTED')}
                       disabled={isActing}
                     >
-                      {isActing ? <span className="animate-spin mr-2">⏳</span> : null}
+                      {isActing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
                       Solicitar Modificación
                     </Button>
                   </DialogFooter>
@@ -489,7 +849,7 @@ export function ReportDetail() {
                   onClick={() => setCurrentView('edit-report')}
                 >
                   <FileEdit className="mr-2 h-4 w-4" />
-                  Editar Rendición
+                  Editar Rendición Completa
                 </Button>
               )}
               {canSubmit && (
