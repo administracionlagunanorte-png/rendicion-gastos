@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import * as XLSX from 'xlsx'
+import fs from 'fs'
+import path from 'path'
 
 export async function GET(request: NextRequest) {
   try {
@@ -51,8 +53,15 @@ export async function GET(request: NextRequest) {
 
     const wb = XLSX.utils.book_new()
 
-    // Sheet 1: Summary
-    const summaryData = reports.map(r => ({
+    // ===== Sheet 1: Summary with company header =====
+    const summaryHeader = [
+      ['', '', 'LAGUNA NORTE', '', ''],
+      ['', '', 'Sistema de Rendición de Gastos', '', ''],
+      ['', '', `Exportado: ${new Date().toLocaleDateString('es-CL')} ${new Date().toLocaleTimeString('es-CL')}`, '', ''],
+      [],  // Empty row
+    ]
+
+    const summaryDataRows = reports.map(r => ({
       'ID Rendición': r.id,
       'Título': r.title,
       'Descripción': r.description || '',
@@ -61,20 +70,66 @@ export async function GET(request: NextRequest) {
       'Estado': getStatusLabel(r.status),
       'Monto Total': r.totalAmount,
       'Monto a Rendir': r.montoRendir,
+      'Diferencia': r.montoRendir > 0 ? r.montoRendir - r.totalAmount : '',
       'Número de Boleta': r.numeroBoleta || '',
       'Cantidad de Gastos': r.items.length,
       'Nota de Revisión': r.reviewNote || '',
       'Fecha Creación': r.createdAt.toLocaleDateString('es-CL'),
       'Fecha Actualización': r.updatedAt.toLocaleDateString('es-CL'),
     }))
-    const summaryWs = XLSX.utils.json_to_sheet(summaryData)
+
+    // Create sheet from header + data
+    const summaryHeaderAoA = summaryHeader.map(row => row.map(cell => cell))
+    const summaryDataAoA = XLSX.utils.json_to_sheet(summaryDataRows, { skipHeader: false })
+
+    // Build the complete sheet
+    const fullSummaryAoA = [
+      ...summaryHeaderAoA,
+      XLSX.utils.sheet_to_json(summaryDataAoA, { header: 1 })[0], // Column headers
+      ...XLSX.utils.sheet_to_json(summaryDataAoA, { header: 1 }).slice(1), // Data rows
+    ]
+
+    const summaryWs = XLSX.utils.aoa_to_sheet(fullSummaryAoA)
+
+    // Set column widths
     summaryWs['!cols'] = [
       { wch: 25 }, { wch: 30 }, { wch: 40 }, { wch: 20 }, { wch: 25 },
-      { wch: 18 }, { wch: 15 }, { wch: 15 }, { wch: 18 }, { wch: 15 }, { wch: 30 }, { wch: 15 }, { wch: 15 }
+      { wch: 18 }, { wch: 15 }, { wch: 15 }, { wch: 15 }, { wch: 18 },
+      { wch: 15 }, { wch: 30 }, { wch: 15 }, { wch: 15 }
     ]
+
+    // Merge cells for company header
+    summaryWs['!merges'] = [
+      { s: { r: 0, c: 2 }, e: { r: 0, c: 4 } },  // "LAGUNA NORTE"
+      { s: { r: 1, c: 2 }, e: { r: 1, c: 4 } },  // "Sistema de Rendición..."
+      { s: { r: 2, c: 2 }, e: { r: 2, c: 4 } },  // Export date
+    ]
+
+    // Style the header cells (company name)
+    const companyCell = summaryWs['C1']
+    if (companyCell) {
+      companyCell.s = {
+        font: { bold: true, sz: 16, color: { rgb: '059669' } },
+        alignment: { horizontal: 'center' }
+      }
+    }
+
+    const subtitleCell = summaryWs['C2']
+    if (subtitleCell) {
+      subtitleCell.s = {
+        font: { bold: true, sz: 11, color: { rgb: '374151' } },
+        alignment: { horizontal: 'center' }
+      }
+    }
+
     XLSX.utils.book_append_sheet(wb, summaryWs, 'Resumen Rendiciones')
 
-    // Sheet 2: Detail
+    // ===== Sheet 2: Detail =====
+    const detailHeader = [
+      ['', 'LAGUNA NORTE - Detalle de Gastos', '', '', '', '', '', '', '', ''],
+      [],  // Empty row
+    ]
+
     const detailData: any[] = []
     reports.forEach(r => {
       r.items.forEach((item, idx) => {
@@ -83,6 +138,8 @@ export async function GET(request: NextRequest) {
           'Título Rendición': idx === 0 ? r.title : '',
           'Solicitante': idx === 0 ? r.user.name : '',
           'Estado Rendición': idx === 0 ? getStatusLabel(r.status) : '',
+          'Monto a Rendir': idx === 0 && r.montoRendir > 0 ? r.montoRendir : '',
+          'Número de Boleta': idx === 0 && r.numeroBoleta ? r.numeroBoleta : '',
           'Descripción Gasto': item.description,
           'Monto': item.amount,
           'Categoría': getCategoryLabel(item.category),
@@ -94,19 +151,33 @@ export async function GET(request: NextRequest) {
     })
 
     if (detailData.length > 0) {
-      const detailWs = XLSX.utils.json_to_sheet(detailData)
+      const detailDataAoA = XLSX.utils.json_to_sheet(detailData, { skipHeader: false })
+      const fullDetailAoA = [
+        ...detailHeader,
+        XLSX.utils.sheet_to_json(detailDataAoA, { header: 1 })[0],
+        ...XLSX.utils.sheet_to_json(detailDataAoA, { header: 1 }).slice(1),
+      ]
+
+      const detailWs = XLSX.utils.aoa_to_sheet(fullDetailAoA)
       detailWs['!cols'] = [
         { wch: 25 }, { wch: 30 }, { wch: 20 }, { wch: 18 },
-        { wch: 30 }, { wch: 12 }, { wch: 18 }, { wch: 15 }, { wch: 12 }, { wch: 40 }
+        { wch: 15 }, { wch: 18 }, { wch: 30 }, { wch: 12 },
+        { wch: 18 }, { wch: 15 }, { wch: 12 }, { wch: 40 }
       ]
+
+      // Merge cells for company header in detail sheet
+      detailWs['!merges'] = [
+        { s: { r: 0, c: 1 }, e: { r: 0, c: 6 } },
+      ]
+
       XLSX.utils.book_append_sheet(wb, detailWs, 'Detalle Gastos')
     }
 
     const buffer = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' })
 
     const filename = reportId
-      ? `rendicion_${reportId}.xlsx`
-      : `rendiciones_${new Date().toISOString().slice(0, 10)}.xlsx`
+      ? `rendicion_laguna_norte_${reportId}.xlsx`
+      : `rendiciones_laguna_norte_${new Date().toISOString().slice(0, 10)}.xlsx`
 
     return new NextResponse(buffer, {
       headers: {

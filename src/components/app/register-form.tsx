@@ -89,11 +89,15 @@ export function RegisterForm() {
       >
         {/* Logo / Brand */}
         <div className="text-center mb-6">
-          <div className="inline-flex items-center justify-center w-14 h-14 bg-emerald-600 rounded-2xl mb-3 shadow-lg shadow-emerald-200">
-            <UserPlus className="h-7 w-7 text-white" />
+          <div className="inline-block mb-3">
+            <img
+              src="/logo-laguna-norte.jpg"
+              alt="Laguna Norte"
+              className="w-16 h-16 rounded-2xl shadow-lg shadow-emerald-200 object-cover mx-auto"
+            />
           </div>
-          <h1 className="text-2xl font-bold text-foreground">Crear Cuenta</h1>
-          <p className="text-muted-foreground text-sm mt-1">Regístrese en el sistema de rendición de gastos</p>
+          <h1 className="text-2xl font-bold text-foreground">Laguna Norte</h1>
+          <p className="text-muted-foreground text-sm mt-1">Crear cuenta en el sistema de rendición de gastos</p>
         </div>
 
         <Card className="shadow-xl border-0 shadow-emerald-100/50">

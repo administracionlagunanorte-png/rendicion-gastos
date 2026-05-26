@@ -13,12 +13,12 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Rendición de Gastos - Sistema de Gestión",
+  title: "Laguna Norte - Rendición de Gastos",
   description: "Sistema de gestión y rendición de gastos empresariales. Cree, revise y apruebe rendiciones de gastos de forma eficiente.",
-  keywords: ["rendición", "gastos", "empresa", "reembolso", "gestión"],
-  authors: [{ name: "Empresa" }],
+  keywords: ["rendición", "gastos", "empresa", "reembolso", "gestión", "Laguna Norte"],
+  authors: [{ name: "Laguna Norte" }],
   icons: {
-    icon: "/logo.svg",
+    icon: "/logo-laguna-norte.jpg",
   },
 };
 

@@ -1,5 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
+import fs from 'fs'
+import path from 'path'
+
+// Load logo as base64 at module level (cached)
+let logoBase64: string | null = null
+function getLogoBase64(): string {
+  if (logoBase64) return logoBase64
+  try {
+    const logoPath = path.join(process.cwd(), 'public', 'logo-laguna-norte.jpg')
+    const logoBuffer = fs.readFileSync(logoPath)
+    logoBase64 = `data:image/jpeg;base64,${logoBuffer.toString('base64')}`
+    return logoBase64
+  } catch {
+    logoBase64 = ''
+    return ''
+  }
+}
 
 export async function GET(request: NextRequest) {
   try {
@@ -38,6 +55,8 @@ export async function GET(request: NextRequest) {
 }
 
 function generatePDFHtml(report: any): string {
+  const logoDataUri = getLogoBase64()
+
   const statusLabels: Record<string, string> = {
     DRAFT: 'Borrador',
     SUBMITTED: 'Enviado',
@@ -80,12 +99,18 @@ function generatePDFHtml(report: any): string {
     </div>
   `).join('')
 
+  // Calculate difference between montoRendir and totalAmount
+  const montoRendir = report.montoRendir || 0
+  const diferencia = montoRendir - report.totalAmount
+  const diferenciaLabel = diferencia >= 0 ? 'Favor' : 'Contra'
+  const diferenciaColor = diferencia >= 0 ? '#059669' : '#dc2626'
+
   return `<!DOCTYPE html>
 <html lang="es">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Rendición de Gastos - ${report.title}</title>
+  <title>Laguna Norte - Rendición de Gastos - ${report.title}</title>
   <style>
     @media print {
       body { margin: 0; padding: 20px; }
@@ -107,9 +132,13 @@ function generatePDFHtml(report: any): string {
   </div>
 
   <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 24px;">
-    <div>
-      <h1>Rendición de Gastos</h1>
-      <p style="color: #6b7280; font-size: 14px;">${report.title}</p>
+    <div style="display: flex; align-items: center; gap: 16px;">
+      ${logoDataUri ? `<img src="${logoDataUri}" alt="Laguna Norte" style="width: 60px; height: 60px; border-radius: 10px; object-fit: cover;" />` : ''}
+      <div>
+        <h1 style="margin-bottom: 2px;">Rendición de Gastos</h1>
+        <p style="color: #059669; font-size: 16px; font-weight: 600; margin: 0;">Laguna Norte</p>
+        <p style="color: #6b7280; font-size: 14px; margin-top: 2px;">${report.title}</p>
+      </div>
     </div>
     <span style="background: ${statusColors[report.status] || '#6b7280'}; color: white; padding: 4px 14px; border-radius: 20px; font-size: 13px; font-weight: 600;">${statusLabels[report.status] || report.status}</span>
   </div>
@@ -131,9 +160,13 @@ function generatePDFHtml(report: any): string {
       <p style="color: #6b7280; font-size: 12px; margin-bottom: 2px;">Monto Total Gastos</p>
       <p style="font-weight: 700; color: #059669; font-size: 18px;">$${report.totalAmount.toLocaleString('es-CL')}</p>
     </div>
-    ${report.montoRendir > 0 ? `<div>
+    ${montoRendir > 0 ? `<div>
       <p style="color: #6b7280; font-size: 12px; margin-bottom: 2px;">Monto a Rendir</p>
-      <p style="font-weight: 700; color: #059669; font-size: 18px;">$${report.montoRendir.toLocaleString('es-CL')}</p>
+      <p style="font-weight: 700; color: #059669; font-size: 18px;">$${montoRendir.toLocaleString('es-CL')}</p>
+    </div>
+    <div>
+      <p style="color: #6b7280; font-size: 12px; margin-bottom: 2px;">Diferencia</p>
+      <p style="font-weight: 700; color: ${diferenciaColor}; font-size: 16px;">$${Math.abs(diferencia).toLocaleString('es-CL')} (${diferenciaLabel})</p>
     </div>` : ''}
     ${report.numeroBoleta ? `<div>
       <p style="color: #6b7280; font-size: 12px; margin-bottom: 2px;">Número de Boleta</p>
@@ -174,9 +207,12 @@ function generatePDFHtml(report: any): string {
     <p style="color: #78350f;">${report.reviewNote}</p>
   </div>` : ''}
 
-  <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #e5e7eb; color: #9ca3af; font-size: 12px; display: flex; justify-content: space-between;">
-    <span>Generado el ${new Date().toLocaleDateString('es-CL')} a las ${new Date().toLocaleTimeString('es-CL')}</span>
-    <span>Sistema de Rendición de Gastos</span>
+  <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #e5e7eb; display: flex; justify-content: space-between; align-items: center;">
+    <div style="display: flex; align-items: center; gap: 8px;">
+      ${logoDataUri ? `<img src="${logoDataUri}" alt="Laguna Norte" style="width: 24px; height: 24px; border-radius: 4px; object-fit: cover;" />` : ''}
+      <span style="color: #059669; font-weight: 600; font-size: 12px;">Laguna Norte - Sistema de Rendición de Gastos</span>
+    </div>
+    <span style="color: #9ca3af; font-size: 11px;">Generado el ${new Date().toLocaleDateString('es-CL')} a las ${new Date().toLocaleTimeString('es-CL')}</span>
   </div>
 </body>
 </html>`
