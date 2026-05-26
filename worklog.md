@@ -185,3 +185,41 @@ Stage Summary:
 - "Mis Rendiciones" section shows only the admin's own reports
 - Photo upload feature was already implemented and working
 - All data fields are already mandatory (imageUrl required in API validation)
+
+---
+Task ID: 2
+Agent: Main Agent
+Task: Add purchase photo (foto de la compra) alongside receipt photo (foto de la boleta) - both mandatory for all profiles
+
+Work Log:
+- Added `compraImageUrl` field to ExpenseItem model in Prisma schema (mapped to `compra_url` column)
+- Ran `npx prisma db push --accept-data-loss` and `npx prisma generate` successfully
+- Updated POST /api/items: added compraImageUrl validation (mandatory) and storage
+- Updated PUT /api/items/[id]: added compraImageUrl validation (mandatory) and update
+- Updated PATCH /api/reports/[id]: now validates both imageUrl (boleta) and compraImageUrl (compra) before submitting
+- Updated report-form.tsx:
+  - Added itemCompraImageUrl and editCompraImageUrl state variables
+  - Added compraImageUrl to SavedItem interface
+  - Updated validateItem() to check both photos
+  - Updated addItem() to send compraImageUrl, reset both on success
+  - Updated startEditItem() to load compraImageUrl
+  - Updated saveEditItem() to validate and send compraImageUrl
+  - Updated submitForReview() to check both photos
+  - Added second ImageUpload component for "Foto de la Compra" in both add and edit forms
+  - Updated display mode to show "Boleta" and "Compra" labels separately
+- Updated report-detail.tsx:
+  - Added itemCompraImageUrl and editCompraImageUrl state variables
+  - Updated addItem() with validation for both photos
+  - Updated startEditItem() to load compraImageUrl
+  - Updated saveEditItem() to validate and send compraImageUrl
+  - Added second ImageUpload for "Foto de la Compra" in inline add and edit forms
+  - Updated display to show "Ver boleta" and "Ver compra" buttons
+  - Changed dialog title from "Comprobante" to "Imagen"
+- Build passes cleanly, server running on port 3000
+
+Stage Summary:
+- Each expense item now requires TWO photos: "Foto de la Boleta" and "Foto de la Compra"
+- Both photos are mandatory at API level and UI level
+- Applies to all user profiles (USER and ADMIN)
+- Photos are displayed with different colored labels (green for boleta, blue for compra)
+- Preview dialog works for both photo types

@@ -14,7 +14,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { description, amount, category, expenseDate, imageUrl, reportId } = body
+    const { description, amount, category, expenseDate, imageUrl, compraImageUrl, reportId } = body
     const userId = session.user.id
     const userRole = session.user.role
 
@@ -49,7 +49,14 @@ export async function POST(request: NextRequest) {
 
     if (!imageUrl || imageUrl.trim() === "") {
       return NextResponse.json(
-        { error: "La foto del comprobante es obligatoria" },
+        { error: "La foto de la boleta es obligatoria" },
+        { status: 400 }
+      )
+    }
+
+    if (!compraImageUrl || compraImageUrl.trim() === "") {
+      return NextResponse.json(
+        { error: "La foto de la compra es obligatoria" },
         { status: 400 }
       )
     }
@@ -98,6 +105,7 @@ export async function POST(request: NextRequest) {
         category: category.trim(),
         expenseDate: new Date(expenseDate),
         imageUrl: imageUrl || null,
+        compraImageUrl: compraImageUrl || null,
         reportId
       }
     })

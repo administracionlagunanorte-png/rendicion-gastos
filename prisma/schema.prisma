@@ -41,16 +41,17 @@ model ExpenseReport {
 }
 
 model ExpenseItem {
-  id          String        @id @default(cuid())
-  description String
-  amount      Float
-  category    String
-  expenseDate DateTime
-  imageUrl    String?
-  reportId    String
-  report      ExpenseReport @relation(fields: [reportId], references: [id], onDelete: Cascade)
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
+  id             String        @id @default(cuid())
+  description    String
+  amount         Float
+  category       String
+  expenseDate    DateTime
+  imageUrl       String?       @map("boleta_url")
+  compraImageUrl String?       @map("compra_url")
+  reportId       String
+  report         ExpenseReport @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
 
   @@map("expense_items")
 }

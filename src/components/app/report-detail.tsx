@@ -119,6 +119,7 @@ export function ReportDetail() {
   const [itemCategory, setItemCategory] = useState('Alimentación')
   const [itemDate, setItemDate] = useState(new Date().toISOString().split('T')[0])
   const [itemImageUrl, setItemImageUrl] = useState<string | null>(null)
+  const [itemCompraImageUrl, setItemCompraImageUrl] = useState<string | null>(null)
   const [isAddingItem, setIsAddingItem] = useState(false)
 
   // Edit item
@@ -128,6 +129,7 @@ export function ReportDetail() {
   const [editCategory, setEditCategory] = useState('')
   const [editDate, setEditDate] = useState('')
   const [editImageUrl, setEditImageUrl] = useState<string | null>(null)
+  const [editCompraImageUrl, setEditCompraImageUrl] = useState<string | null>(null)
   const [isUpdatingItem, setIsUpdatingItem] = useState(false)
   const [isDeletingItem, setIsDeletingItem] = useState<string | null>(null)
 
@@ -218,6 +220,14 @@ export function ReportDetail() {
       toast.error('Complete descripción y monto')
       return
     }
+    if (!itemImageUrl) {
+      toast.error('La foto de la boleta es obligatoria')
+      return
+    }
+    if (!itemCompraImageUrl) {
+      toast.error('La foto de la compra es obligatoria')
+      return
+    }
 
     setIsAddingItem(true)
     try {
@@ -230,6 +240,7 @@ export function ReportDetail() {
           category: itemCategory,
           expenseDate: itemDate,
           imageUrl: itemImageUrl,
+          compraImageUrl: itemCompraImageUrl,
           reportId: selectedReportId,
         }),
       })
@@ -245,6 +256,7 @@ export function ReportDetail() {
       setItemCategory('Alimentación')
       setItemDate(new Date().toISOString().split('T')[0])
       setItemImageUrl(null)
+      setItemCompraImageUrl(null)
       setShowAddForm(false)
 
       queryClient.invalidateQueries({ queryKey: ['report', selectedReportId] })
@@ -265,11 +277,20 @@ export function ReportDetail() {
     setEditCategory(item.category)
     setEditDate(new Date(item.expenseDate).toISOString().split('T')[0])
     setEditImageUrl(item.imageUrl)
+    setEditCompraImageUrl(item.compraImageUrl)
   }
 
   // Save edited item
   const saveEditItem = async () => {
     if (!editingItemId) return
+    if (!editImageUrl) {
+      toast.error('La foto de la boleta es obligatoria')
+      return
+    }
+    if (!editCompraImageUrl) {
+      toast.error('La foto de la compra es obligatoria')
+      return
+    }
     setIsUpdatingItem(true)
     try {
       const res = await fetch(`/api/items/${editingItemId}`, {
@@ -281,6 +302,7 @@ export function ReportDetail() {
           category: editCategory,
           expenseDate: editDate,
           imageUrl: editImageUrl,
+          compraImageUrl: editCompraImageUrl,
         }),
       })
       if (!res.ok) {
@@ -357,7 +379,7 @@ export function ReportDetail() {
         <Dialog open={!!previewImage} onOpenChange={() => setPreviewImage(null)}>
           <DialogContent className="max-w-lg">
             <DialogHeader>
-              <DialogTitle>Comprobante</DialogTitle>
+              <DialogTitle>Imagen</DialogTitle>
             </DialogHeader>
             <img
               src={previewImage}
@@ -548,10 +570,19 @@ export function ReportDetail() {
                   />
                 </div>
                 <div className="space-y-1">
-                  <Label className="text-xs">Comprobante</Label>
+                  <Label className="text-xs">Foto de la Boleta *</Label>
                   <ImageUpload
                     value={itemImageUrl}
                     onChange={setItemImageUrl}
+                    required={true}
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Foto de la Compra *</Label>
+                  <ImageUpload
+                    value={itemCompraImageUrl}
+                    onChange={setItemCompraImageUrl}
+                    required={true}
                   />
                 </div>
               </div>
@@ -653,8 +684,12 @@ export function ReportDetail() {
                           <Input type="date" value={editDate} onChange={(e) => setEditDate(e.target.value)} />
                         </div>
                         <div className="space-y-1">
-                          <Label className="text-xs">Comprobante</Label>
-                          <ImageUpload value={editImageUrl} onChange={setEditImageUrl} />
+                          <Label className="text-xs">Foto de la Boleta *</Label>
+                          <ImageUpload value={editImageUrl} onChange={setEditImageUrl} required={true} />
+                        </div>
+                        <div className="space-y-1">
+                          <Label className="text-xs">Foto de la Compra *</Label>
+                          <ImageUpload value={editCompraImageUrl} onChange={setEditCompraImageUrl} required={true} />
                         </div>
                       </div>
                     </div>
@@ -683,7 +718,16 @@ export function ReportDetail() {
                                   className="text-xs text-emerald-600 flex items-center gap-0.5 hover:underline"
                                 >
                                   <Paperclip className="h-3 w-3" />
-                                  Ver comprobante
+                                  Ver boleta
+                                </button>
+                              )}
+                              {item.compraImageUrl && (
+                                <button
+                                  onClick={() => setPreviewImage(item.compraImageUrl)}
+                                  className="text-xs text-blue-600 flex items-center gap-0.5 hover:underline"
+                                >
+                                  <Paperclip className="h-3 w-3" />
+                                  Ver compra
                                 </button>
                               )}
                             </div>

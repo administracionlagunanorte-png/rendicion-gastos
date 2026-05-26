@@ -48,6 +48,7 @@ interface SavedItem {
   category: string
   expenseDate: string
   imageUrl: string | null
+  compraImageUrl: string | null
 }
 
 export function ReportForm() {
@@ -70,6 +71,7 @@ export function ReportForm() {
   const [itemCategory, setItemCategory] = useState('Alimentación')
   const [itemDate, setItemDate] = useState(new Date().toISOString().split('T')[0])
   const [itemImageUrl, setItemImageUrl] = useState<string | null>(null)
+  const [itemCompraImageUrl, setItemCompraImageUrl] = useState<string | null>(null)
   const [itemErrors, setItemErrors] = useState<Record<string, string>>({})
 
   // Saved items (from backend)
@@ -82,6 +84,7 @@ export function ReportForm() {
   const [editCategory, setEditCategory] = useState('')
   const [editDate, setEditDate] = useState('')
   const [editImageUrl, setEditImageUrl] = useState<string | null>(null)
+  const [editCompraImageUrl, setEditCompraImageUrl] = useState<string | null>(null)
 
   // Loading states
   const [isSavingReport, setIsSavingReport] = useState(false)
@@ -117,6 +120,7 @@ export function ReportForm() {
           category: item.category,
           expenseDate: new Date(item.expenseDate).toISOString().split('T')[0],
           imageUrl: item.imageUrl,
+          compraImageUrl: item.compraImageUrl,
         }))
       )
     }
@@ -187,7 +191,8 @@ export function ReportForm() {
     if (!itemAmount || parseFloat(itemAmount) <= 0) errors.amount = 'Monto inválido'
     if (!itemCategory) errors.category = 'Requerido'
     if (!itemDate) errors.date = 'Requerido'
-    if (!itemImageUrl) errors.image = 'La foto del comprobante es obligatoria'
+    if (!itemImageUrl) errors.image = 'La foto de la boleta es obligatoria'
+    if (!itemCompraImageUrl) errors.compraImage = 'La foto de la compra es obligatoria'
     setItemErrors(errors)
     return Object.keys(errors).length === 0
   }
@@ -212,6 +217,7 @@ export function ReportForm() {
           category: itemCategory,
           expenseDate: itemDate,
           imageUrl: itemImageUrl,
+          compraImageUrl: itemCompraImageUrl,
           reportId,
         }),
       })
@@ -230,6 +236,7 @@ export function ReportForm() {
         category: savedItem.category,
         expenseDate: new Date(savedItem.expenseDate).toISOString().split('T')[0],
         imageUrl: savedItem.imageUrl,
+        compraImageUrl: savedItem.compraImageUrl,
       }])
 
       // Reset form
@@ -238,6 +245,7 @@ export function ReportForm() {
       setItemCategory('Alimentación')
       setItemDate(new Date().toISOString().split('T')[0])
       setItemImageUrl(null)
+      setItemCompraImageUrl(null)
       setItemErrors({})
 
       toast.success('Gasto agregado')
@@ -258,6 +266,7 @@ export function ReportForm() {
     setEditCategory(item.category)
     setEditDate(item.expenseDate)
     setEditImageUrl(item.imageUrl)
+    setEditCompraImageUrl(item.compraImageUrl)
   }
 
   // Save edited item
@@ -268,7 +277,11 @@ export function ReportForm() {
       return
     }
     if (!editImageUrl) {
-      toast.error('La foto del comprobante es obligatoria')
+      toast.error('La foto de la boleta es obligatoria')
+      return
+    }
+    if (!editCompraImageUrl) {
+      toast.error('La foto de la compra es obligatoria')
       return
     }
 
@@ -283,6 +296,7 @@ export function ReportForm() {
           category: editCategory,
           expenseDate: editDate,
           imageUrl: editImageUrl,
+          compraImageUrl: editCompraImageUrl,
         }),
       })
 
@@ -302,6 +316,7 @@ export function ReportForm() {
               category: updatedItem.category,
               expenseDate: new Date(updatedItem.expenseDate).toISOString().split('T')[0],
               imageUrl: updatedItem.imageUrl,
+              compraImageUrl: updatedItem.compraImageUrl,
             }
           : item
       ))
@@ -351,10 +366,12 @@ export function ReportForm() {
       toast.error('Debe agregar al menos un gasto para enviar')
       return
     }
-    // Verificar que todos los items tengan foto
-    const itemsWithoutImage = savedItems.filter(item => !item.imageUrl)
-    if (itemsWithoutImage.length > 0) {
-      toast.error(`Todos los gastos deben tener foto del comprobante. Faltan ${itemsWithoutImage.length} foto(s).`)
+    // Verificar que todos los items tengan ambas fotos
+    const itemsWithoutBoleta = savedItems.filter(item => !item.imageUrl)
+    const itemsWithoutCompra = savedItems.filter(item => !item.compraImageUrl)
+    if (itemsWithoutBoleta.length > 0 || itemsWithoutCompra.length > 0) {
+      const faltantes = itemsWithoutBoleta.length + itemsWithoutCompra.length
+      toast.error(`Todos los gastos deben tener foto de boleta y foto de compra. Faltan ${faltantes} foto(s).`)
       return
     }
 
@@ -628,10 +645,18 @@ export function ReportForm() {
                             />
                           </div>
                           <div className="space-y-1 sm:col-span-2">
-                            <Label className="text-xs">Foto del Comprobante *</Label>
+                            <Label className="text-xs">Foto de la Boleta *</Label>
                             <ImageUpload
                               value={editImageUrl}
                               onChange={setEditImageUrl}
+                              required={true}
+                            />
+                          </div>
+                          <div className="space-y-1 sm:col-span-2">
+                            <Label className="text-xs">Foto de la Compra *</Label>
+                            <ImageUpload
+                              value={editCompraImageUrl}
+                              onChange={setEditCompraImageUrl}
                               required={true}
                             />
                           </div>
@@ -655,7 +680,13 @@ export function ReportForm() {
                                 {item.imageUrl && (
                                   <span className="text-[11px] text-emerald-600 flex items-center gap-0.5">
                                     <Paperclip className="h-2.5 w-2.5" />
-                                    Comprobante
+                                    Boleta
+                                  </span>
+                                )}
+                                {item.compraImageUrl && (
+                                  <span className="text-[11px] text-blue-600 flex items-center gap-0.5">
+                                    <Paperclip className="h-2.5 w-2.5" />
+                                    Compra
                                   </span>
                                 )}
                               </div>
@@ -823,7 +854,7 @@ export function ReportForm() {
                     />
                   </div>
                   <div className="space-y-1 sm:col-span-2">
-                    <Label className="text-xs">Foto del Comprobante *</Label>
+                    <Label className="text-xs">Foto de la Boleta *</Label>
                     <ImageUpload
                       value={itemImageUrl}
                       onChange={(url) => {
@@ -833,6 +864,18 @@ export function ReportForm() {
                       required={true}
                     />
                     {itemErrors.image && <p className="text-[10px] text-red-500">{itemErrors.image}</p>}
+                  </div>
+                  <div className="space-y-1 sm:col-span-2">
+                    <Label className="text-xs">Foto de la Compra *</Label>
+                    <ImageUpload
+                      value={itemCompraImageUrl}
+                      onChange={(url) => {
+                        setItemCompraImageUrl(url)
+                        if (itemErrors.compraImage) setItemErrors(prev => ({ ...prev, compraImage: '' }))
+                      }}
+                      required={true}
+                    />
+                    {itemErrors.compraImage && <p className="text-[10px] text-red-500">{itemErrors.compraImage}</p>}
                   </div>
                 </div>
 

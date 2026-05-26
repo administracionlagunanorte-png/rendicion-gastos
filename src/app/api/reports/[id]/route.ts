@@ -242,11 +242,19 @@ export async function PATCH(
           { status: 400 }
         )
       }
-      // Verificar que todos los items tengan foto de comprobante
-      const itemsWithoutImage = existingReport.items.filter(item => !item.imageUrl)
-      if (itemsWithoutImage.length > 0) {
+      // Verificar que todos los items tengan foto de boleta
+      const itemsWithoutBoleta = existingReport.items.filter(item => !item.imageUrl)
+      if (itemsWithoutBoleta.length > 0) {
         return NextResponse.json(
-          { error: `Todos los gastos deben tener foto del comprobante. Faltan ${itemsWithoutImage.length} foto(s).` },
+          { error: `Todos los gastos deben tener foto de la boleta. Faltan ${itemsWithoutBoleta.length} foto(s).` },
+          { status: 400 }
+        )
+      }
+      // Verificar que todos los items tengan foto de la compra
+      const itemsWithoutCompra = existingReport.items.filter(item => !item.compraImageUrl)
+      if (itemsWithoutCompra.length > 0) {
+        return NextResponse.json(
+          { error: `Todos los gastos deben tener foto de la compra. Faltan ${itemsWithoutCompra.length} foto(s).` },
           { status: 400 }
         )
       }

@@ -18,7 +18,7 @@ export async function PUT(
 
     const { id } = await params
     const body = await request.json()
-    const { description, amount, category, expenseDate, imageUrl } = body
+    const { description, amount, category, expenseDate, imageUrl, compraImageUrl } = body
     const userId = session.user.id
     const userRole = session.user.role
 
@@ -59,10 +59,18 @@ export async function PUT(
       )
     }
 
-    // La foto del comprobante es obligatoria - no se puede quitar
+    // La foto de la boleta es obligatoria - no se puede quitar
     if (imageUrl !== undefined && (!imageUrl || imageUrl.trim() === "")) {
       return NextResponse.json(
-        { error: "La foto del comprobante es obligatoria" },
+        { error: "La foto de la boleta es obligatoria" },
+        { status: 400 }
+      )
+    }
+
+    // La foto de la compra es obligatoria - no se puede quitar
+    if (compraImageUrl !== undefined && (!compraImageUrl || compraImageUrl.trim() === "")) {
+      return NextResponse.json(
+        { error: "La foto de la compra es obligatoria" },
         { status: 400 }
       )
     }
@@ -78,6 +86,7 @@ export async function PUT(
     if (category !== undefined) updateData.category = category.trim()
     if (expenseDate !== undefined) updateData.expenseDate = new Date(expenseDate)
     if (imageUrl !== undefined) updateData.imageUrl = imageUrl || null
+    if (compraImageUrl !== undefined) updateData.compraImageUrl = compraImageUrl || null
 
     const item = await db.expenseItem.update({
       where: { id },
