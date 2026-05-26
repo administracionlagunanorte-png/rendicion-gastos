@@ -130,14 +130,22 @@ export function ReportForm() {
       toast.error('El título es requerido')
       return
     }
+    if (!montoRendir || parseFloat(montoRendir) <= 0) {
+      toast.error('El monto a rendir es obligatorio')
+      return
+    }
+    if (!numeroBoleta.trim()) {
+      toast.error('El número de boleta es obligatorio')
+      return
+    }
 
     setIsSavingReport(true)
     try {
       const reportData: any = {
         title: title.trim(),
         description: description.trim() || null,
-        montoRendir: montoRendir ? parseFloat(montoRendir) : 0,
-        numeroBoleta: numeroBoleta.trim() || null,
+        montoRendir: parseFloat(montoRendir),
+        numeroBoleta: numeroBoleta.trim(),
       }
 
       let res: Response
@@ -179,6 +187,7 @@ export function ReportForm() {
     if (!itemAmount || parseFloat(itemAmount) <= 0) errors.amount = 'Monto inválido'
     if (!itemCategory) errors.category = 'Requerido'
     if (!itemDate) errors.date = 'Requerido'
+    if (!itemImageUrl) errors.image = 'La foto del comprobante es obligatoria'
     setItemErrors(errors)
     return Object.keys(errors).length === 0
   }
@@ -256,6 +265,10 @@ export function ReportForm() {
     if (!editingItemId) return
     if (!editDescription.trim() || !editAmount || parseFloat(editAmount) <= 0) {
       toast.error('Complete todos los campos requeridos')
+      return
+    }
+    if (!editImageUrl) {
+      toast.error('La foto del comprobante es obligatoria')
       return
     }
 
@@ -336,6 +349,12 @@ export function ReportForm() {
     if (!reportId) return
     if (savedItems.length === 0) {
       toast.error('Debe agregar al menos un gasto para enviar')
+      return
+    }
+    // Verificar que todos los items tengan foto
+    const itemsWithoutImage = savedItems.filter(item => !item.imageUrl)
+    if (itemsWithoutImage.length > 0) {
+      toast.error(`Todos los gastos deben tener foto del comprobante. Faltan ${itemsWithoutImage.length} foto(s).`)
       return
     }
 
@@ -424,7 +443,7 @@ export function ReportForm() {
               <Button
                 size="sm"
                 onClick={saveReport}
-                disabled={isSavingReport || !title.trim()}
+                disabled={isSavingReport || !title.trim() || !montoRendir || !numeroBoleta.trim()}
                 className="bg-emerald-600 hover:bg-emerald-700 text-white"
               >
                 {isSavingReport ? (
@@ -473,7 +492,7 @@ export function ReportForm() {
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="monto-rendir">Monto a Rendir</Label>
+              <Label htmlFor="monto-rendir">Monto a Rendir *</Label>
               <div className="relative">
                 <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
                 <Input
@@ -487,17 +506,17 @@ export function ReportForm() {
                   className="pl-9"
                 />
               </div>
-              <p className="text-[10px] text-muted-foreground">Monto total que se solicita rendir</p>
+              <p className="text-[10px] text-red-500">Campo obligatorio</p>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="numero-boleta">Número de Boleta</Label>
+              <Label htmlFor="numero-boleta">Número de Boleta *</Label>
               <Input
                 id="numero-boleta"
                 placeholder="Ej: 12345"
                 value={numeroBoleta}
                 onChange={(e) => setNumeroBoleta(e.target.value)}
               />
-              <p className="text-[10px] text-muted-foreground">Número de boleta o factura asociada</p>
+              <p className="text-[10px] text-red-500">Campo obligatorio</p>
             </div>
           </div>
         </CardContent>
@@ -608,11 +627,12 @@ export function ReportForm() {
                               onChange={(e) => setEditDate(e.target.value)}
                             />
                           </div>
-                          <div className="space-y-1">
-                            <Label className="text-xs">Comprobante</Label>
+                          <div className="space-y-1 sm:col-span-2">
+                            <Label className="text-xs">Foto del Comprobante *</Label>
                             <ImageUpload
                               value={editImageUrl}
                               onChange={setEditImageUrl}
+                              required={true}
                             />
                           </div>
                         </div>
@@ -802,12 +822,17 @@ export function ReportForm() {
                       className={itemErrors.date ? 'border-red-300' : ''}
                     />
                   </div>
-                  <div className="space-y-1">
-                    <Label className="text-xs">Comprobante (opcional)</Label>
+                  <div className="space-y-1 sm:col-span-2">
+                    <Label className="text-xs">Foto del Comprobante *</Label>
                     <ImageUpload
                       value={itemImageUrl}
-                      onChange={setItemImageUrl}
+                      onChange={(url) => {
+                        setItemImageUrl(url)
+                        if (itemErrors.image) setItemErrors(prev => ({ ...prev, image: '' }))
+                      }}
+                      required={true}
                     />
+                    {itemErrors.image && <p className="text-[10px] text-red-500">{itemErrors.image}</p>}
                   </div>
                 </div>
 

@@ -59,6 +59,14 @@ export async function PUT(
       )
     }
 
+    // La foto del comprobante es obligatoria - no se puede quitar
+    if (imageUrl !== undefined && (!imageUrl || imageUrl.trim() === "")) {
+      return NextResponse.json(
+        { error: "La foto del comprobante es obligatoria" },
+        { status: 400 }
+      )
+    }
+
     // Calcular diferencia de monto para actualizar total del reporte
     const oldAmount = existingItem.amount
     const newAmount = amount !== undefined ? parseFloat(amount) : oldAmount

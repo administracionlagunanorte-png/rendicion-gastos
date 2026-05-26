@@ -126,6 +126,22 @@ export async function PUT(
       }
     }
 
+    // Validar monto a rendir si se proporciona
+    if (montoRendir !== undefined && parseFloat(montoRendir) <= 0) {
+      return NextResponse.json(
+        { error: "El monto a rendir debe ser mayor a 0" },
+        { status: 400 }
+      )
+    }
+
+    // Validar número de boleta - no se puede dejar vacío si se proporciona
+    if (numeroBoleta !== undefined && numeroBoleta.trim() === "") {
+      return NextResponse.json(
+        { error: "El número de boleta no puede estar vacío" },
+        { status: 400 }
+      )
+    }
+
     // Actualizar reporte
     const updateData: any = {}
     if (title !== undefined) updateData.title = title.trim()
@@ -223,6 +239,27 @@ export async function PATCH(
       if (existingReport.items.length === 0) {
         return NextResponse.json(
           { error: "El reporte debe tener al menos un gasto para ser enviado" },
+          { status: 400 }
+        )
+      }
+      // Verificar que todos los items tengan foto de comprobante
+      const itemsWithoutImage = existingReport.items.filter(item => !item.imageUrl)
+      if (itemsWithoutImage.length > 0) {
+        return NextResponse.json(
+          { error: `Todos los gastos deben tener foto del comprobante. Faltan ${itemsWithoutImage.length} foto(s).` },
+          { status: 400 }
+        )
+      }
+      // Verificar que el reporte tenga monto a rendir y número de boleta
+      if (!existingReport.montoRendir || existingReport.montoRendir <= 0) {
+        return NextResponse.json(
+          { error: "El reporte debe tener un monto a rendir antes de enviarse" },
+          { status: 400 }
+        )
+      }
+      if (!existingReport.numeroBoleta || existingReport.numeroBoleta.trim() === "") {
+        return NextResponse.json(
+          { error: "El reporte debe tener un número de boleta antes de enviarse" },
           { status: 400 }
         )
       }

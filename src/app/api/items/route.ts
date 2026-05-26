@@ -47,6 +47,13 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    if (!imageUrl || imageUrl.trim() === "") {
+      return NextResponse.json(
+        { error: "La foto del comprobante es obligatoria" },
+        { status: 400 }
+      )
+    }
+
     if (!reportId) {
       return NextResponse.json(
         { error: "El ID del reporte es requerido" },

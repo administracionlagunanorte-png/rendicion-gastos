@@ -117,6 +117,20 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    if (montoRendir === undefined || montoRendir === null || parseFloat(montoRendir) <= 0) {
+      return NextResponse.json(
+        { error: "El monto a rendir es obligatorio y debe ser mayor a 0" },
+        { status: 400 }
+      )
+    }
+
+    if (!numeroBoleta || numeroBoleta.trim() === "") {
+      return NextResponse.json(
+        { error: "El número de boleta es obligatorio" },
+        { status: 400 }
+      )
+    }
+
     // Determinar el userId del reporte
     const reportUserId = userId || session.user.id
     const sessionUserId = session.user.id
@@ -149,8 +163,8 @@ export async function POST(request: NextRequest) {
         description: description?.trim() || null,
         userId: reportUserId,
         status: "DRAFT",
-        montoRendir: montoRendir !== undefined ? parseFloat(montoRendir) : 0,
-        numeroBoleta: numeroBoleta?.trim() || null,
+        montoRendir: parseFloat(montoRendir),
+        numeroBoleta: numeroBoleta.trim(),
       },
       include: {
         user: {

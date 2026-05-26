@@ -9,9 +9,10 @@ interface ImageUploadProps {
   value?: string | null
   onChange: (url: string | null) => void
   disabled?: boolean
+  required?: boolean
 }
 
-export function ImageUpload({ value, onChange, disabled }: ImageUploadProps) {
+export function ImageUpload({ value, onChange, disabled, required }: ImageUploadProps) {
   const [isUploading, setIsUploading] = useState(false)
   const [isDragging, setIsDragging] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -101,18 +102,34 @@ export function ImageUpload({ value, onChange, disabled }: ImageUploadProps) {
           alt="Comprobante de gasto"
           className="w-24 h-24 object-cover rounded-lg"
         />
-        <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-          <Button
-            type="button"
-            variant="destructive"
-            size="icon"
-            className="h-7 w-7"
-            onClick={handleRemove}
-            disabled={disabled || isUploading}
-          >
-            <X className="h-4 w-4" />
-          </Button>
-        </div>
+        {!required && (
+          <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+            <Button
+              type="button"
+              variant="destructive"
+              size="icon"
+              className="h-7 w-7"
+              onClick={handleRemove}
+              disabled={disabled || isUploading}
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+        )}
+        {required && (
+          <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              className="h-7 text-[10px] px-2"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={disabled || isUploading}
+            >
+              Cambiar
+            </Button>
+          </div>
+        )}
       </div>
     )
   }
@@ -145,8 +162,8 @@ export function ImageUpload({ value, onChange, disabled }: ImageUploadProps) {
             <span className="text-xs text-muted-foreground">
               Arrastra o haz clic para subir
             </span>
-            <span className="text-[10px] text-muted-foreground/60">
-              JPG, PNG - máx. 5MB
+            <span className="text-[10px] text-red-500">
+              {required ? 'Foto obligatoria' : 'JPG, PNG - máx. 5MB'}
             </span>
           </div>
         )}
