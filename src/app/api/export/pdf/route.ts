@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { getAuthSession } from '@/lib/auth-helper'
 import { db } from '@/lib/db'
 import fs from 'fs'
 import path from 'path'
@@ -20,6 +21,15 @@ function getLogoBase64(): string {
 
 export async function GET(request: NextRequest) {
   try {
+    // Authentication check
+    const session = await getAuthSession(request)
+    if (!session) {
+      return NextResponse.json(
+        { error: 'No autorizado. Inicie sesión para continuar.' },
+        { status: 401 }
+      )
+    }
+
     const { searchParams } = new URL(request.url)
     const reportId = searchParams.get('reportId')
 

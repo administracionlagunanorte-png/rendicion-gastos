@@ -19,6 +19,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useAppStore } from '@/lib/store'
+import { apiFetch } from '@/lib/api'
 
 const statusConfig: Record<string, { label: string; color: string; icon: React.ReactNode }> = {
   DRAFT: { label: 'Borrador', color: 'bg-gray-100 text-gray-700 border-gray-200', icon: <FileEdit className="h-3 w-3" /> },
@@ -36,7 +37,7 @@ export function UserDashboard() {
   const { data: stats, isLoading: statsLoading } = useQuery({
     queryKey: ['stats'],
     queryFn: async () => {
-      const res = await fetch('/api/stats')
+      const res = await apiFetch('/api/stats')
       if (!res.ok) throw new Error('Error')
       return res.json()
     },
@@ -45,7 +46,7 @@ export function UserDashboard() {
   const { data: reportsData, isLoading: reportsLoading } = useQuery({
     queryKey: ['my-reports'],
     queryFn: async () => {
-      const res = await fetch('/api/reports?pageSize=5')
+      const res = await apiFetch('/api/reports?pageSize=5')
       if (!res.ok) throw new Error('Error')
       return res.json()
     },

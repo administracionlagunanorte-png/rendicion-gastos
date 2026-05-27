@@ -3,6 +3,7 @@
 import { useState, useRef, useCallback } from 'react'
 import { Upload, X, Camera, ImagePlus, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { apiFetch } from '@/lib/api'
 import { toast } from 'sonner'
 
 interface ImageUploadProps {
@@ -42,7 +43,7 @@ export function ImageUpload({ value, onChange, disabled, required }: ImageUpload
       const formData = new FormData()
       formData.append('file', file)
 
-      const response = await fetch('/api/upload', {
+      const response = await apiFetch('/api/upload', {
         method: 'POST',
         body: formData,
       })

@@ -32,6 +32,7 @@ import {
 } from '@/components/ui/dialog'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Separator } from '@/components/ui/separator'
+import { apiFetch } from '@/lib/api'
 import { toast } from 'sonner'
 
 export function UsersPanel() {
@@ -55,7 +56,7 @@ export function UsersPanel() {
     queryFn: async () => {
       const params = new URLSearchParams()
       if (searchTerm) params.set('search', searchTerm)
-      const res = await fetch(`/api/users?${params.toString()}`)
+      const res = await apiFetch(`/api/users?${params.toString()}`)
       if (!res.ok) throw new Error('Error')
       return res.json()
     },
@@ -78,7 +79,7 @@ export function UsersPanel() {
 
     setIsCreating(true)
     try {
-      const res = await fetch('/api/users', {
+      const res = await apiFetch('/api/users', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -117,7 +118,7 @@ export function UsersPanel() {
     if (!deleteUserId) return
     setIsDeleting(true)
     try {
-      const res = await fetch(`/api/users/${deleteUserId}`, { method: 'DELETE' })
+      const res = await apiFetch(`/api/users/${deleteUserId}`, { method: 'DELETE' })
       if (!res.ok) {
         const data = await res.json()
         throw new Error(data.error || 'Error al eliminar usuario')

@@ -9,6 +9,7 @@ import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useAppStore } from '@/lib/store'
+import { apiFetch } from '@/lib/api'
 import { toast } from 'sonner'
 
 export function RegisterForm() {
@@ -43,7 +44,7 @@ export function RegisterForm() {
 
     setIsLoading(true)
     try {
-      const response = await fetch('/api/auth/register', {
+      const response = await apiFetch('/api/auth/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: name.trim(), email: email.trim(), password, role }),
@@ -59,11 +60,10 @@ export function RegisterForm() {
       toast.success('Cuenta creada exitosamente. Iniciando sesión...')
 
       // Auto-login after registration using our custom endpoint
-      const loginRes = await fetch('/api/auth/login', {
+      const loginRes = await apiFetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: email.trim(), password }),
-        credentials: 'include',
       })
 
       if (loginRes.ok) {

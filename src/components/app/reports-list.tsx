@@ -24,6 +24,7 @@ import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useAppStore } from '@/lib/store'
+import { apiFetch } from '@/lib/api'
 
 const statusConfig: Record<string, { label: string; color: string; icon: React.ReactNode }> = {
   DRAFT: { label: 'Borrador', color: 'bg-gray-100 text-gray-700 border-gray-200', icon: <FileEdit className="h-3 w-3" /> },
@@ -57,7 +58,7 @@ export function ReportsList({ myReportsOnly }: { myReportsOnly?: boolean }) {
   const { data, isLoading } = useQuery({
     queryKey: ['reports', page, filters.status, myReportsOnly ? session?.user?.id : filters.userId, filters.category],
     queryFn: async () => {
-      const res = await fetch(`/api/reports?${buildQuery()}`)
+      const res = await apiFetch(`/api/reports?${buildQuery()}`)
       if (!res.ok) throw new Error('Error')
       return res.json()
     },

@@ -22,6 +22,7 @@ import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Separator } from '@/components/ui/separator'
 import { useAppStore } from '@/lib/store'
+import { apiFetch } from '@/lib/api'
 import { useQuery } from '@tanstack/react-query'
 
 interface NavItem {
@@ -148,7 +149,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const { data: notifData } = useQuery({
     queryKey: ['notifications-unread'],
     queryFn: async () => {
-      const res = await fetch('/api/notifications?unreadOnly=true')
+      const res = await apiFetch('/api/notifications?unreadOnly=true')
       if (!res.ok) throw new Error('Error')
       return res.json()
     },

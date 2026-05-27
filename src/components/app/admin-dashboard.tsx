@@ -24,6 +24,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { useAppStore } from '@/lib/store'
+import { apiFetch } from '@/lib/api'
 import { toast } from 'sonner'
 
 const statusConfig: Record<string, { label: string; color: string; icon: React.ReactNode }> = {
@@ -40,7 +41,7 @@ export function AdminDashboard() {
   const { data: stats, isLoading: statsLoading } = useQuery({
     queryKey: ['stats'],
     queryFn: async () => {
-      const res = await fetch('/api/stats')
+      const res = await apiFetch('/api/stats')
       if (!res.ok) throw new Error('Error')
       return res.json()
     },
@@ -49,7 +50,7 @@ export function AdminDashboard() {
   const { data: pendingData, isLoading: pendingLoading } = useQuery({
     queryKey: ['pending-reports'],
     queryFn: async () => {
-      const res = await fetch('/api/reports?status=SUBMITTED&pageSize=10')
+      const res = await apiFetch('/api/reports?status=SUBMITTED&pageSize=10')
       if (!res.ok) throw new Error('Error')
       return res.json()
     },
@@ -64,7 +65,7 @@ export function AdminDashboard() {
       if (filters.dateTo) params.set('dateTo', filters.dateTo)
 
       const url = `/api/export/excel?${params.toString()}`
-      const res = await fetch(url)
+      const res = await apiFetch(url)
       if (!res.ok) throw new Error('Error al exportar')
       const blob = await res.blob()
       const downloadUrl = URL.createObjectURL(blob)

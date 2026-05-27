@@ -223,3 +223,36 @@ Stage Summary:
 - Applies to all user profiles (USER and ADMIN)
 - Photos are displayed with different colored labels (green for boleta, blue for compra)
 - Preview dialog works for both photo types
+---
+Task ID: 1
+Agent: Main Agent
+Task: Fix "No autorizado" auth error for regular users (maria) - add credentials: 'include' to all fetch calls
+
+Work Log:
+- Diagnosed root cause: All frontend fetch() calls were missing `credentials: 'include'`, causing session cookies to not be sent through the Caddy reverse proxy (port 81 → 3000)
+- The auth-context.tsx already had `credentials: 'include'` on its fetch calls, which is why login worked but subsequent API calls failed
+- Created shared `apiFetch` helper in `/src/lib/api.ts` that wraps `fetch()` with `credentials: 'include'`
+- Updated ALL 11 frontend components to use `apiFetch` instead of raw `fetch()`:
+  - app-shell.tsx (notifications)
+  - report-detail.tsx (reports, items, exports)
+  - user-dashboard.tsx (stats, reports)
+  - admin-dashboard.tsx (stats, reports, exports)
+  - reports-list.tsx (reports)
+  - notifications-panel.tsx (notifications)
+  - report-form.tsx (reports, items)
+  - image-upload.tsx (upload)
+  - users-panel.tsx (users)
+  - user-profile.tsx (change-password)
+  - register-form.tsx (register, login)
+- Added authentication checks to export API routes that had ZERO auth:
+  - /api/export/excel/route.ts
+  - /api/export/pdf/route.ts
+- Verified the schema already had `compraImageUrl` field and both photo uploads were already required
+- Build passes cleanly with `npx next build`
+
+Stage Summary:
+- Root cause: Missing `credentials: 'include'` on 28+ fetch calls behind Caddy reverse proxy
+- Fix: Created `apiFetch` helper and replaced all raw `fetch()` calls in components
+- Security fix: Added auth to export routes that were publicly accessible
+- Schema already has both `imageUrl` (boleta) and `compraImageUrl` (compra) fields
+- Both photo uploads are already required in all forms for all profiles

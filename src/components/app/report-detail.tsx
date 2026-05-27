@@ -49,6 +49,7 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog'
 import { useAppStore } from '@/lib/store'
+import { apiFetch } from '@/lib/api'
 import { ImageUpload } from './image-upload'
 import { toast } from 'sonner'
 
@@ -139,7 +140,7 @@ export function ReportDetail() {
   const { data: report, isLoading } = useQuery({
     queryKey: ['report', selectedReportId],
     queryFn: async () => {
-      const res = await fetch(`/api/reports/${selectedReportId}`)
+      const res = await apiFetch(`/api/reports/${selectedReportId}`)
       if (!res.ok) throw new Error('Error')
       return res.json()
     },
@@ -149,7 +150,7 @@ export function ReportDetail() {
   const handleStatusChange = async (status: string) => {
     setIsActing(true)
     try {
-      const res = await fetch(`/api/reports/${selectedReportId}`, {
+      const res = await apiFetch(`/api/reports/${selectedReportId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status, reviewNote: reviewNote.trim() || undefined }),
@@ -178,7 +179,7 @@ export function ReportDetail() {
 
   const handleSubmitForReview = async () => {
     try {
-      const res = await fetch(`/api/reports/${selectedReportId}`, {
+      const res = await apiFetch(`/api/reports/${selectedReportId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: 'SUBMITTED' }),
@@ -199,7 +200,7 @@ export function ReportDetail() {
   const handleExport = async (format: 'excel' | 'pdf') => {
     try {
       const url = `/api/export/${format}?reportId=${selectedReportId}`
-      const res = await fetch(url)
+      const res = await apiFetch(url)
       if (!res.ok) throw new Error('Error al exportar')
       const blob = await res.blob()
       const downloadUrl = URL.createObjectURL(blob)
@@ -231,7 +232,7 @@ export function ReportDetail() {
 
     setIsAddingItem(true)
     try {
-      const res = await fetch('/api/items', {
+      const res = await apiFetch('/api/items', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -293,7 +294,7 @@ export function ReportDetail() {
     }
     setIsUpdatingItem(true)
     try {
-      const res = await fetch(`/api/items/${editingItemId}`, {
+      const res = await apiFetch(`/api/items/${editingItemId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -325,7 +326,7 @@ export function ReportDetail() {
   const deleteItem = async (itemId: string) => {
     setIsDeletingItem(itemId)
     try {
-      const res = await fetch(`/api/items/${itemId}`, { method: 'DELETE' })
+      const res = await apiFetch(`/api/items/${itemId}`, { method: 'DELETE' })
       if (!res.ok) {
         const data = await res.json()
         throw new Error(data.error || 'Error al eliminar')

@@ -29,6 +29,7 @@ import { Separator } from '@/components/ui/separator'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Badge } from '@/components/ui/badge'
 import { useAppStore } from '@/lib/store'
+import { apiFetch } from '@/lib/api'
 import { ImageUpload } from './image-upload'
 import { toast } from 'sonner'
 
@@ -97,7 +98,7 @@ export function ReportForm() {
   const { data: report, isLoading: reportLoading } = useQuery({
     queryKey: ['report', selectedReportId],
     queryFn: async () => {
-      const res = await fetch(`/api/reports/${selectedReportId}`)
+      const res = await apiFetch(`/api/reports/${selectedReportId}`)
       if (!res.ok) throw new Error('Error')
       return res.json()
     },
@@ -154,13 +155,13 @@ export function ReportForm() {
 
       let res: Response
       if (!reportId) {
-        res = await fetch('/api/reports', {
+        res = await apiFetch('/api/reports', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(reportData),
         })
       } else {
-        res = await fetch(`/api/reports/${reportId}`, {
+        res = await apiFetch(`/api/reports/${reportId}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(reportData),
@@ -208,7 +209,7 @@ export function ReportForm() {
 
     setIsAddingItem(true)
     try {
-      const res = await fetch('/api/items', {
+      const res = await apiFetch('/api/items', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -287,7 +288,7 @@ export function ReportForm() {
 
     setIsUpdatingItem(true)
     try {
-      const res = await fetch(`/api/items/${editingItemId}`, {
+      const res = await apiFetch(`/api/items/${editingItemId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -341,7 +342,7 @@ export function ReportForm() {
   const deleteItem = async (itemId: string) => {
     setIsDeletingItem(itemId)
     try {
-      const res = await fetch(`/api/items/${itemId}`, { method: 'DELETE' })
+      const res = await apiFetch(`/api/items/${itemId}`, { method: 'DELETE' })
       if (!res.ok) {
         const data = await res.json()
         throw new Error(data.error || 'Error al eliminar gasto')
@@ -377,7 +378,7 @@ export function ReportForm() {
 
     setIsSubmitting(true)
     try {
-      const res = await fetch(`/api/reports/${reportId}`, {
+      const res = await apiFetch(`/api/reports/${reportId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: 'SUBMITTED' }),
