@@ -2,6 +2,11 @@ import { NextResponse } from "next/server"
 import bcrypt from "bcryptjs"
 import { db } from "@/lib/db"
 
+// GET /api/seed - Crear datos de demostración (también acepta GET para facilidad)
+export async function GET() {
+  return POST()
+}
+
 // POST /api/seed - Crear datos de demostración
 export async function POST() {
   try {
@@ -9,8 +14,8 @@ export async function POST() {
     const existingUsers = await db.user.count()
     if (existingUsers > 0) {
       return NextResponse.json(
-        { error: "Ya existen datos en la base de datos. Limpie la base de datos antes de ejecutar el seed." },
-        { status: 400 }
+        { message: "Ya existen datos en la base de datos. Seed omitido.", userCount: existingUsers },
+        { status: 200 }
       )
     }
 
@@ -43,6 +48,9 @@ export async function POST() {
         role: "USER"
       }
     })
+
+    // Placeholder image for seed data (1x1 green pixel PNG as base64 data URL)
+    const placeholderImage = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=="
 
     // Crear reportes de ejemplo
     const report1 = await db.expenseReport.create({
@@ -112,29 +120,45 @@ export async function POST() {
         {
           description: "Vuelo ida y vuelta Madrid",
           amount: 350.00,
+          numeroBoleta: "B001-00001",
+          montoRendir: 350.00,
           category: "Transporte",
           expenseDate: new Date("2024-01-15"),
+          imageBoletaUrl: placeholderImage,
+          imageCompraUrl: placeholderImage,
           reportId: report1.id
         },
         {
           description: "Hotel 3 noches",
           amount: 300.50,
+          numeroBoleta: "B001-00002",
+          montoRendir: 300.50,
           category: "Alojamiento",
           expenseDate: new Date("2024-01-15"),
+          imageBoletaUrl: placeholderImage,
+          imageCompraUrl: placeholderImage,
           reportId: report1.id
         },
         {
           description: "Cena con cliente",
           amount: 120.00,
+          numeroBoleta: "B001-00003",
+          montoRendir: 120.00,
           category: "Alimentación",
           expenseDate: new Date("2024-01-16"),
+          imageBoletaUrl: placeholderImage,
+          imageCompraUrl: placeholderImage,
           reportId: report1.id
         },
         {
           description: "Taxi aeropuerto-hotel",
           amount: 80.00,
+          numeroBoleta: "B001-00004",
+          montoRendir: 80.00,
           category: "Transporte",
           expenseDate: new Date("2024-01-15"),
+          imageBoletaUrl: placeholderImage,
+          imageCompraUrl: placeholderImage,
           reportId: report1.id
         }
       ]
@@ -146,22 +170,34 @@ export async function POST() {
         {
           description: "Resmas de papel A4",
           amount: 45.80,
+          numeroBoleta: "B002-00001",
+          montoRendir: 45.80,
           category: "Oficina",
           expenseDate: new Date("2024-01-10"),
+          imageBoletaUrl: placeholderImage,
+          imageCompraUrl: placeholderImage,
           reportId: report2.id
         },
         {
           description: "Cartuchos de tinta impresora",
           amount: 89.00,
+          numeroBoleta: "B002-00002",
+          montoRendir: 89.00,
           category: "Oficina",
           expenseDate: new Date("2024-01-12"),
+          imageBoletaUrl: placeholderImage,
+          imageCompraUrl: placeholderImage,
           reportId: report2.id
         },
         {
           description: "Carpetas y archivadores",
           amount: 100.00,
+          numeroBoleta: "B002-00003",
+          montoRendir: 100.00,
           category: "Oficina",
           expenseDate: new Date("2024-01-14"),
+          imageBoletaUrl: placeholderImage,
+          imageCompraUrl: placeholderImage,
           reportId: report2.id
         }
       ]
@@ -173,15 +209,23 @@ export async function POST() {
         {
           description: "Curso AWS Solutions Architect",
           amount: 250.00,
+          numeroBoleta: "B004-00001",
+          montoRendir: 250.00,
           category: "Capacitación",
           expenseDate: new Date("2024-01-05"),
+          imageBoletaUrl: placeholderImage,
+          imageCompraUrl: placeholderImage,
           reportId: report4.id
         },
         {
           description: "Certificación Scrum Master",
           amount: 200.00,
+          numeroBoleta: "B004-00002",
+          montoRendir: 200.00,
           category: "Capacitación",
           expenseDate: new Date("2024-01-18"),
+          imageBoletaUrl: placeholderImage,
+          imageCompraUrl: placeholderImage,
           reportId: report4.id
         }
       ]
@@ -193,22 +237,34 @@ export async function POST() {
         {
           description: "Abono transporte público",
           amount: 120.00,
+          numeroBoleta: "B005-00001",
+          montoRendir: 120.00,
           category: "Transporte",
           expenseDate: new Date("2024-02-01"),
+          imageBoletaUrl: placeholderImage,
+          imageCompraUrl: placeholderImage,
           reportId: report5.id
         },
         {
           description: "Taxi reunión cliente",
           amount: 45.00,
+          numeroBoleta: "B005-00002",
+          montoRendir: 45.00,
           category: "Transporte",
           expenseDate: new Date("2024-02-05"),
+          imageBoletaUrl: placeholderImage,
+          imageCompraUrl: placeholderImage,
           reportId: report5.id
         },
         {
           description: "Estacionamiento oficina central",
           amount: 155.00,
+          numeroBoleta: "B005-00003",
+          montoRendir: 155.00,
           category: "Transporte",
           expenseDate: new Date("2024-02-08"),
+          imageBoletaUrl: placeholderImage,
+          imageCompraUrl: placeholderImage,
           reportId: report5.id
         }
       ]

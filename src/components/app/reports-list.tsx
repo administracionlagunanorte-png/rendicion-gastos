@@ -24,7 +24,6 @@ import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useAppStore } from '@/lib/store'
-import { apiFetch } from '@/lib/api'
 
 const statusConfig: Record<string, { label: string; color: string; icon: React.ReactNode }> = {
   DRAFT: { label: 'Borrador', color: 'bg-gray-100 text-gray-700 border-gray-200', icon: <FileEdit className="h-3 w-3" /> },
@@ -34,7 +33,7 @@ const statusConfig: Record<string, { label: string; color: string; icon: React.R
   MODIFICATION_REQUESTED: { label: 'Modificación', color: 'bg-orange-50 text-orange-700 border-orange-200', icon: <AlertTriangle className="h-3 w-3" /> },
 }
 
-export function ReportsList({ myReportsOnly }: { myReportsOnly?: boolean }) {
+export function ReportsList() {
   const { data: session } = useSession()
   const { filters, setFilters, resetFilters, setCurrentView, setSelectedReportId } = useAppStore()
   const [page, setPage] = useState(1)
@@ -45,20 +44,16 @@ export function ReportsList({ myReportsOnly }: { myReportsOnly?: boolean }) {
     const params = new URLSearchParams()
     params.set('page', page.toString())
     params.set('pageSize', pageSize.toString())
-    if (myReportsOnly) {
-      params.set('userId', session?.user?.id || '')
-    } else {
-      if (filters.userId) params.set('userId', filters.userId)
-    }
     if (filters.status) params.set('status', filters.status)
+    if (filters.userId) params.set('userId', filters.userId)
     if (filters.category) params.set('category', filters.category)
     return params.toString()
   }
 
   const { data, isLoading } = useQuery({
-    queryKey: ['reports', page, filters.status, myReportsOnly ? session?.user?.id : filters.userId, filters.category],
+    queryKey: ['reports', page, filters.status, filters.userId, filters.category],
     queryFn: async () => {
-      const res = await apiFetch(`/api/reports?${buildQuery()}`)
+      const res = await fetch(`/api/reports?${buildQuery()}`)
       if (!res.ok) throw new Error('Error')
       return res.json()
     },
@@ -76,18 +71,20 @@ export function ReportsList({ myReportsOnly }: { myReportsOnly?: boolean }) {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-xl font-bold">{myReportsOnly ? 'Mis Rendiciones' : 'Rendiciones de Gastos'}</h2>
+          <h2 className="text-xl font-bold">Rendiciones de Gastos</h2>
           <p className="text-sm text-muted-foreground">
             {data?.pagination?.total || 0} rendiciones encontradas
           </p>
         </div>
-        <Button
-          onClick={() => setCurrentView('create-report')}
-          className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm"
-        >
-          <FileText className="mr-2 h-4 w-4" />
-          Nueva
-        </Button>
+        {!isAdmin && (
+          <Button
+            onClick={() => setCurrentView('create-report')}
+            className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm"
+          >
+            <FileText className="mr-2 h-4 w-4" />
+            Nueva
+          </Button>
+        )}
       </div>
 
       {/* Filters */}
@@ -214,21 +211,9 @@ export function ReportsList({ myReportsOnly }: { myReportsOnly?: boolean }) {
                         </div>
                       </div>
                       <div className="flex items-center gap-3 shrink-0">
-                        <div className="text-right">
-                          <span className="text-sm font-bold text-emerald-700 block">
-                            ${report.totalAmount.toLocaleString('es-ES', { minimumFractionDigits: 2 })}
-                          </span>
-                          {report.montoRendir > 0 && (
-                            <span className="text-[10px] text-muted-foreground block">
-                              Rendir: ${report.montoRendir.toLocaleString('es-ES', { minimumFractionDigits: 2 })}
-                            </span>
-                          )}
-                          {report.numeroBoleta && (
-                            <span className="text-[10px] text-muted-foreground block">
-                              Boleta: {report.numeroBoleta}
-                            </span>
-                          )}
-                        </div>
+                        <span className="text-sm font-bold text-emerald-700">
+                          ${report.totalAmount.toLocaleString('es-ES', { minimumFractionDigits: 2 })}
+                        </span>
                         <Badge variant="outline" className={`text-[10px] ${status.color}`}>
                           {status.icon}
                           <span className="ml-1">{status.label}</span>

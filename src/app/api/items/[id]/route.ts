@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
-import { getAuthSession } from "@/lib/auth-helper"
+import { getServerSession } from "next-auth"
+import { authOptions } from "@/lib/auth-config"
 import { db } from "@/lib/db"
 
 // PUT /api/items/[id] - Actualizar un item de gasto
@@ -8,8 +9,8 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await getAuthSession(request)
-    if (!session) {
+    const session = await getServerSession(authOptions)
+    if (!session?.user) {
       return NextResponse.json(
         { error: "No autorizado. Inicie sesión para continuar." },
         { status: 401 }
@@ -18,14 +19,23 @@ export async function PUT(
 
     const { id } = await params
     const body = await request.json()
-    const { description, amount, category, expenseDate, imageUrl, compraImageUrl } = body
-    const userId = session.user.id
-    const userRole = session.user.role
+    const {
+      description,
+      amount,
+      numeroBoleta,
+      montoRendir,
+      category,
+      expenseDate,
+      imageBoletaUrl,
+      imageCompraUrl,
+    } = body
+    const userId = (session.user as any).id
+    const userRole = (session.user as any).role
 
     // Verificar que el item existe
     const existingItem = await db.expenseItem.findUnique({
       where: { id },
-      include: { report: true }
+      include: { report: true },
     })
 
     if (!existingItem) {
@@ -59,18 +69,10 @@ export async function PUT(
       )
     }
 
-    // La foto de la boleta es obligatoria - no se puede quitar
-    if (imageUrl !== undefined && (!imageUrl || imageUrl.trim() === "")) {
+    // Validar monto a rendir si se proporciona
+    if (montoRendir !== undefined && montoRendir <= 0) {
       return NextResponse.json(
-        { error: "La foto de la boleta es obligatoria" },
-        { status: 400 }
-      )
-    }
-
-    // La foto de la compra es obligatoria - no se puede quitar
-    if (compraImageUrl !== undefined && (!compraImageUrl || compraImageUrl.trim() === "")) {
-      return NextResponse.json(
-        { error: "La foto de la compra es obligatoria" },
+        { error: "El monto a rendir debe ser mayor a 0" },
         { status: 400 }
       )
     }
@@ -83,14 +85,16 @@ export async function PUT(
     const updateData: any = {}
     if (description !== undefined) updateData.description = description.trim()
     if (amount !== undefined) updateData.amount = parseFloat(amount)
+    if (numeroBoleta !== undefined) updateData.numeroBoleta = numeroBoleta.trim()
+    if (montoRendir !== undefined) updateData.montoRendir = parseFloat(montoRendir)
     if (category !== undefined) updateData.category = category.trim()
     if (expenseDate !== undefined) updateData.expenseDate = new Date(expenseDate)
-    if (imageUrl !== undefined) updateData.imageUrl = imageUrl || null
-    if (compraImageUrl !== undefined) updateData.compraImageUrl = compraImageUrl || null
+    if (imageBoletaUrl !== undefined) updateData.imageBoletaUrl = imageBoletaUrl
+    if (imageCompraUrl !== undefined) updateData.imageCompraUrl = imageCompraUrl
 
     const item = await db.expenseItem.update({
       where: { id },
-      data: updateData
+      data: updateData,
     })
 
     // Actualizar monto total del reporte
@@ -98,8 +102,8 @@ export async function PUT(
       await db.expenseReport.update({
         where: { id: existingItem.reportId },
         data: {
-          totalAmount: existingItem.report.totalAmount - oldAmount + newAmount
-        }
+          totalAmount: existingItem.report.totalAmount - oldAmount + newAmount,
+        },
       })
     }
 
@@ -119,8 +123,8 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await getAuthSession(request)
-    if (!session) {
+    const session = await getServerSession(authOptions)
+    if (!session?.user) {
       return NextResponse.json(
         { error: "No autorizado. Inicie sesión para continuar." },
         { status: 401 }
@@ -128,13 +132,13 @@ export async function DELETE(
     }
 
     const { id } = await params
-    const userId = session.user.id
-    const userRole = session.user.role
+    const userId = (session.user as any).id
+    const userRole = (session.user as any).role
 
     // Verificar que el item existe
     const existingItem = await db.expenseItem.findUnique({
       where: { id },
-      include: { report: true }
+      include: { report: true },
     })
 
     if (!existingItem) {
@@ -162,15 +166,15 @@ export async function DELETE(
 
     // Eliminar item
     await db.expenseItem.delete({
-      where: { id }
+      where: { id },
     })
 
     // Actualizar monto total del reporte
     await db.expenseReport.update({
       where: { id: existingItem.reportId },
       data: {
-        totalAmount: existingItem.report.totalAmount - existingItem.amount
-      }
+        totalAmount: existingItem.report.totalAmount - existingItem.amount,
+      },
     })
 
     return NextResponse.json({ message: "Gasto eliminado exitosamente" })

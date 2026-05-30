@@ -14,7 +14,6 @@ import {
   FileEdit,
   TrendingUp,
   Eye,
-  PlusCircle,
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -24,7 +23,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { useAppStore } from '@/lib/store'
-import { apiFetch } from '@/lib/api'
 import { toast } from 'sonner'
 
 const statusConfig: Record<string, { label: string; color: string; icon: React.ReactNode }> = {
@@ -41,7 +39,7 @@ export function AdminDashboard() {
   const { data: stats, isLoading: statsLoading } = useQuery({
     queryKey: ['stats'],
     queryFn: async () => {
-      const res = await apiFetch('/api/stats')
+      const res = await fetch('/api/stats')
       if (!res.ok) throw new Error('Error')
       return res.json()
     },
@@ -50,7 +48,7 @@ export function AdminDashboard() {
   const { data: pendingData, isLoading: pendingLoading } = useQuery({
     queryKey: ['pending-reports'],
     queryFn: async () => {
-      const res = await apiFetch('/api/reports?status=SUBMITTED&pageSize=10')
+      const res = await fetch('/api/reports?status=SUBMITTED&pageSize=10')
       if (!res.ok) throw new Error('Error')
       return res.json()
     },
@@ -65,7 +63,7 @@ export function AdminDashboard() {
       if (filters.dateTo) params.set('dateTo', filters.dateTo)
 
       const url = `/api/export/excel?${params.toString()}`
-      const res = await apiFetch(url)
+      const res = await fetch(url)
       if (!res.ok) throw new Error('Error al exportar')
       const blob = await res.blob()
       const downloadUrl = URL.createObjectURL(blob)
@@ -133,23 +131,14 @@ export function AdminDashboard() {
           <h2 className="text-2xl font-bold">Panel de Administración</h2>
           <p className="text-muted-foreground mt-1">Gestiona y revisa todas las rendiciones de gastos</p>
         </div>
-        <div className="flex gap-2">
-          <Button
-            onClick={() => setCurrentView('create-report')}
-            className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm"
-          >
-            <PlusCircle className="mr-2 h-4 w-4" />
-            Nueva Rendición
-          </Button>
-          <Button
-            onClick={handleExportAll}
-            variant="outline"
-            className="shadow-sm"
-          >
-            <Download className="mr-2 h-4 w-4" />
-            Exportar Todo
-          </Button>
-        </div>
+        <Button
+          onClick={handleExportAll}
+          variant="outline"
+          className="shadow-sm"
+        >
+          <Download className="mr-2 h-4 w-4" />
+          Exportar Todo
+        </Button>
       </div>
 
       {/* Stats Cards */}

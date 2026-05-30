@@ -9,7 +9,6 @@ import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useAppStore } from '@/lib/store'
-import { apiFetch } from '@/lib/api'
 import { toast } from 'sonner'
 
 export function RegisterForm() {
@@ -44,7 +43,7 @@ export function RegisterForm() {
 
     setIsLoading(true)
     try {
-      const response = await apiFetch('/api/auth/register', {
+      const response = await fetch('/api/auth/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: name.trim(), email: email.trim(), password, role }),
@@ -60,10 +59,11 @@ export function RegisterForm() {
       toast.success('Cuenta creada exitosamente. Iniciando sesión...')
 
       // Auto-login after registration using our custom endpoint
-      const loginRes = await apiFetch('/api/auth/login', {
+      const loginRes = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: email.trim(), password }),
+        credentials: 'include',
       })
 
       if (loginRes.ok) {
@@ -89,15 +89,11 @@ export function RegisterForm() {
       >
         {/* Logo / Brand */}
         <div className="text-center mb-6">
-          <div className="inline-block mb-3">
-            <img
-              src="/logo-laguna-norte.jpg"
-              alt="Laguna Norte"
-              className="w-16 h-16 rounded-2xl shadow-lg shadow-emerald-200 object-cover mx-auto"
-            />
+          <div className="inline-flex items-center justify-center w-14 h-14 bg-emerald-600 rounded-2xl mb-3 shadow-lg shadow-emerald-200">
+            <UserPlus className="h-7 w-7 text-white" />
           </div>
-          <h1 className="text-2xl font-bold text-foreground">Laguna Norte</h1>
-          <p className="text-muted-foreground text-sm mt-1">Crear cuenta en el sistema de rendición de gastos</p>
+          <h1 className="text-2xl font-bold text-foreground">Crear Cuenta</h1>
+          <p className="text-muted-foreground text-sm mt-1">Regístrese en el sistema de rendición de gastos</p>
         </div>
 
         <Card className="shadow-xl border-0 shadow-emerald-100/50">

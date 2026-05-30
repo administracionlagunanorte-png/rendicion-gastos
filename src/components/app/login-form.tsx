@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { useAuth } from '@/lib/auth-context'
 import { motion } from 'framer-motion'
-import { Loader2, LogIn, Mail, Lock } from 'lucide-react'
+import { Loader2, LogIn, Mail, Lock, Receipt } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -66,16 +66,12 @@ export function LoginForm() {
             initial={{ scale: 0.8 }}
             animate={{ scale: 1 }}
             transition={{ duration: 0.5, delay: 0.1 }}
-            className="inline-block mb-4"
+            className="inline-flex items-center justify-center w-16 h-16 bg-emerald-600 rounded-2xl mb-4 shadow-lg shadow-emerald-200"
           >
-            <img
-              src="/logo-laguna-norte.jpg"
-              alt="Laguna Norte"
-              className="w-20 h-20 rounded-2xl shadow-lg shadow-emerald-200 object-cover mx-auto"
-            />
+            <Receipt className="h-8 w-8 text-white" />
           </motion.div>
-          <h1 className="text-2xl font-bold text-foreground">Laguna Norte</h1>
-          <p className="text-muted-foreground text-sm mt-1">Sistema de Rendición de Gastos</p>
+          <h1 className="text-2xl font-bold text-foreground">Rendición de Gastos</h1>
+          <p className="text-muted-foreground text-sm mt-1">Sistema de gestión de gastos empresariales</p>
         </div>
 
         <Card className="shadow-xl border-0 shadow-emerald-100/50">
@@ -126,11 +122,7 @@ export function LoginForm() {
                   />
                 </div>
               </div>
-              <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-3 text-xs text-emerald-800">
-                <p className="font-semibold mb-1">Credenciales de prueba:</p>
-                <p>Admin: admin@empresa.com / password123</p>
-                <p>Usuario: maria@empresa.com / password123</p>
-              </div>
+
             </CardContent>
             <CardFooter className="flex flex-col gap-4">
               <Button

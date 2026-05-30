@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
-import { getAuthSession } from "@/lib/auth-helper"
+import { getServerSession } from "next-auth"
+import { authOptions } from "@/lib/auth-config"
 import { db } from "@/lib/db"
 
 // PATCH /api/notifications/[id] - Marcar notificación como leída
@@ -8,8 +9,8 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await getAuthSession(request)
-    if (!session) {
+    const session = await getServerSession(authOptions)
+    if (!session?.user) {
       return NextResponse.json(
         { error: "No autorizado. Inicie sesión para continuar." },
         { status: 401 }
@@ -17,7 +18,7 @@ export async function PATCH(
     }
 
     const { id } = await params
-    const userId = session.user.id
+    const userId = (session.user as any).id
 
     const notification = await db.notification.findUnique({
       where: { id }
@@ -58,8 +59,8 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await getAuthSession(request)
-    if (!session) {
+    const session = await getServerSession(authOptions)
+    if (!session?.user) {
       return NextResponse.json(
         { error: "No autorizado. Inicie sesión para continuar." },
         { status: 401 }
@@ -67,7 +68,7 @@ export async function DELETE(
     }
 
     const { id } = await params
-    const userId = session.user.id
+    const userId = (session.user as any).id
 
     const notification = await db.notification.findUnique({
       where: { id }

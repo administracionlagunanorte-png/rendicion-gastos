@@ -1,20 +1,21 @@
 import { NextRequest, NextResponse } from "next/server"
-import { getAuthSession } from "@/lib/auth-helper"
+import { getServerSession } from "next-auth"
+import { authOptions } from "@/lib/auth-config"
 import { db } from "@/lib/db"
 
 // GET /api/reports - Listar reportes de gastos
 export async function GET(request: NextRequest) {
   try {
-    const session = await getAuthSession(request)
-    if (!session) {
+    const session = await getServerSession(authOptions)
+    if (!session?.user) {
       return NextResponse.json(
         { error: "No autorizado. Inicie sesión para continuar." },
         { status: 401 }
       )
     }
 
-    const userRole = session.user.role
-    const userId = session.user.id
+    const userRole = (session.user as any).role
+    const userId = (session.user as any).id
     const searchParams = request.nextUrl.searchParams
 
     // Parámetros de filtrado
@@ -91,8 +92,8 @@ export async function GET(request: NextRequest) {
 // POST /api/reports - Crear nuevo reporte de gastos
 export async function POST(request: NextRequest) {
   try {
-    const session = await getAuthSession(request)
-    if (!session) {
+    const session = await getServerSession(authOptions)
+    if (!session?.user) {
       return NextResponse.json(
         { error: "No autorizado. Inicie sesión para continuar." },
         { status: 401 }
@@ -100,7 +101,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { title, description, userId, montoRendir, numeroBoleta } = body
+    const { title, description, userId } = body
 
     // Validación
     if (!title || title.trim() === "") {
@@ -117,24 +118,10 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    if (montoRendir === undefined || montoRendir === null || parseFloat(montoRendir) <= 0) {
-      return NextResponse.json(
-        { error: "El monto a rendir es obligatorio y debe ser mayor a 0" },
-        { status: 400 }
-      )
-    }
-
-    if (!numeroBoleta || numeroBoleta.trim() === "") {
-      return NextResponse.json(
-        { error: "El número de boleta es obligatorio" },
-        { status: 400 }
-      )
-    }
-
     // Determinar el userId del reporte
-    const reportUserId = userId || session.user.id
-    const sessionUserId = session.user.id
-    const userRole = session.user.role
+    const reportUserId = userId || (session.user as any).id
+    const sessionUserId = (session.user as any).id
+    const userRole = (session.user as any).role
 
     // Solo admin puede crear reportes para otros usuarios
     if (reportUserId !== sessionUserId && userRole !== "ADMIN") {
@@ -162,9 +149,7 @@ export async function POST(request: NextRequest) {
         title: title.trim(),
         description: description?.trim() || null,
         userId: reportUserId,
-        status: "DRAFT",
-        montoRendir: parseFloat(montoRendir),
-        numeroBoleta: numeroBoleta.trim(),
+        status: "DRAFT"
       },
       include: {
         user: {

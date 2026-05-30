@@ -3,7 +3,7 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
@@ -21,21 +21,19 @@ model User {
 }
 
 model ExpenseReport {
-  id           String        @id @default(cuid())
-  title        String
-  description  String?
-  status       String        @default("DRAFT")
-  totalAmount  Float         @default(0)
-  montoRendir  Float         @default(0)
-  numeroBoleta String?
-  userId       String
-  user         User          @relation(fields: [userId], references: [id])
-  items        ExpenseItem[]
-  reviewNote   String?
-  reviewedBy   String?
-  reviewedAt   DateTime?
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
+  id          String        @id @default(cuid())
+  title       String
+  description String?
+  status      String        @default("DRAFT")
+  totalAmount Float         @default(0)
+  userId      String
+  user        User          @relation(fields: [userId], references: [id])
+  items       ExpenseItem[]
+  reviewNote  String?
+  reviewedBy  String?
+  reviewedAt  DateTime?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
 
   @@map("expense_reports")
 }
@@ -44,10 +42,12 @@ model ExpenseItem {
   id             String        @id @default(cuid())
   description    String
   amount         Float
+  numeroBoleta   String
+  montoRendir    Float
   category       String
   expenseDate    DateTime
-  imageUrl       String?       @map("boleta_url")
-  compraImageUrl String?       @map("compra_url")
+  imageBoletaUrl String        @db.Text
+  imageCompraUrl String        @db.Text
   reportId       String
   report         ExpenseReport @relation(fields: [reportId], references: [id], onDelete: Cascade)
   createdAt      DateTime      @default(now())

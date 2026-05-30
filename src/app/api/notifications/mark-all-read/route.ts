@@ -1,19 +1,20 @@
-import { NextRequest, NextResponse } from "next/server"
-import { getAuthSession } from "@/lib/auth-helper"
+import { NextResponse } from "next/server"
+import { getServerSession } from "next-auth"
+import { authOptions } from "@/lib/auth-config"
 import { db } from "@/lib/db"
 
 // PATCH /api/notifications/mark-all-read - Marcar todas las notificaciones como leídas
-export async function PATCH(request: NextRequest) {
+export async function PATCH() {
   try {
-    const session = await getAuthSession(request)
-    if (!session) {
+    const session = await getServerSession(authOptions)
+    if (!session?.user) {
       return NextResponse.json(
         { error: "No autorizado. Inicie sesión para continuar." },
         { status: 401 }
       )
     }
 
-    const userId = session.user.id
+    const userId = (session.user as any).id
 
     const result = await db.notification.updateMany({
       where: { userId, read: false },

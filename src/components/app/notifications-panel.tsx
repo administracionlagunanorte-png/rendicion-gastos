@@ -17,7 +17,6 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useAppStore } from '@/lib/store'
-import { apiFetch } from '@/lib/api'
 import { toast } from 'sonner'
 
 const typeConfig: Record<string, { icon: React.ReactNode; color: string; bg: string }> = {
@@ -34,7 +33,7 @@ export function NotificationsPanel() {
   const { data, isLoading } = useQuery({
     queryKey: ['notifications'],
     queryFn: async () => {
-      const res = await apiFetch('/api/notifications')
+      const res = await fetch('/api/notifications')
       if (!res.ok) throw new Error('Error')
       return res.json()
     },
@@ -42,7 +41,7 @@ export function NotificationsPanel() {
 
   const handleMarkAsRead = async (id: string) => {
     try {
-      const res = await apiFetch(`/api/notifications/${id}`, { method: 'PATCH' })
+      const res = await fetch(`/api/notifications/${id}`, { method: 'PATCH' })
       if (!res.ok) throw new Error('Error')
       queryClient.invalidateQueries({ queryKey: ['notifications'] })
       queryClient.invalidateQueries({ queryKey: ['notifications-unread'] })
@@ -53,7 +52,7 @@ export function NotificationsPanel() {
 
   const handleMarkAllRead = async () => {
     try {
-      const res = await apiFetch('/api/notifications/mark-all-read', { method: 'PATCH' })
+      const res = await fetch('/api/notifications/mark-all-read', { method: 'PATCH' })
       if (!res.ok) throw new Error('Error')
       queryClient.invalidateQueries({ queryKey: ['notifications'] })
       queryClient.invalidateQueries({ queryKey: ['notifications-unread'] })

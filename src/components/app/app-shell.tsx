@@ -13,8 +13,6 @@ import {
   Receipt,
   Shield,
   ChevronRight,
-  Users,
-  UserCircle,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -22,7 +20,6 @@ import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Separator } from '@/components/ui/separator'
 import { useAppStore } from '@/lib/store'
-import { apiFetch } from '@/lib/api'
 import { useQuery } from '@tanstack/react-query'
 
 interface NavItem {
@@ -57,14 +54,12 @@ function SidebarContent({
     <div className="flex flex-col h-full">
       {/* Logo */}
       <div className="flex items-center gap-3 px-4 py-5">
-        <img
-          src="/logo-laguna-norte.jpg"
-          alt="Laguna Norte"
-          className="w-9 h-9 rounded-lg shadow-sm object-cover"
-        />
+        <div className="flex items-center justify-center w-9 h-9 bg-emerald-600 rounded-lg shadow-sm">
+          <Receipt className="h-5 w-5 text-white" />
+        </div>
         <div>
-          <h2 className="font-bold text-sm">Laguna Norte</h2>
-          <p className="text-[10px] text-muted-foreground">Rendición de Gastos</p>
+          <h2 className="font-bold text-sm">Rendición</h2>
+          <p className="text-[10px] text-muted-foreground">de Gastos</p>
         </div>
       </div>
 
@@ -149,7 +144,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const { data: notifData } = useQuery({
     queryKey: ['notifications-unread'],
     queryFn: async () => {
-      const res = await apiFetch('/api/notifications?unreadOnly=true')
+      const res = await fetch('/api/notifications?unreadOnly=true')
       if (!res.ok) throw new Error('Error')
       return res.json()
     },
@@ -177,12 +172,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       icon: <Bell className="h-4 w-4" />,
       view: 'notifications',
     },
-    {
-      id: 'profile',
-      label: 'Mi Perfil',
-      icon: <UserCircle className="h-4 w-4" />,
-      view: 'profile',
-    },
   ]
 
   const adminNavItems: NavItem[] = [
@@ -199,34 +188,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       view: 'dashboard',
     },
     {
-      id: 'my-reports',
-      label: 'Mis Rendiciones',
-      icon: <Receipt className="h-4 w-4" />,
-      view: 'my-reports',
-    },
-    {
-      id: 'create-report',
-      label: 'Nueva Rendición',
-      icon: <PlusCircle className="h-4 w-4" />,
-      view: 'create-report',
-    },
-    {
-      id: 'users',
-      label: 'Usuarios',
-      icon: <Users className="h-4 w-4" />,
-      view: 'users',
-    },
-    {
       id: 'notifications',
       label: 'Notificaciones',
       icon: <Bell className="h-4 w-4" />,
       view: 'notifications',
-    },
-    {
-      id: 'profile',
-      label: 'Mi Perfil',
-      icon: <UserCircle className="h-4 w-4" />,
-      view: 'profile',
     },
   ]
 
@@ -276,12 +241,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               </SheetContent>
             </Sheet>
             <div className="flex items-center gap-2">
-              <img
-                src="/logo-laguna-norte.jpg"
-                alt="Laguna Norte"
-                className="w-7 h-7 rounded-md object-cover"
-              />
-              <span className="font-semibold text-sm">Laguna Norte</span>
+              <div className="w-7 h-7 bg-emerald-600 rounded-md flex items-center justify-center">
+                <Receipt className="h-4 w-4 text-white" />
+              </div>
+              <span className="font-semibold text-sm">Rendición</span>
             </div>
           </div>
 

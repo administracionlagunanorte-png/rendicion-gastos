@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
-import { getAuthSession } from "@/lib/auth-helper"
+import { getServerSession } from "next-auth"
+import { authOptions } from "@/lib/auth-config"
 import { db } from "@/lib/db"
 
 // GET /api/reports/[id] - Obtener un reporte por ID
@@ -8,8 +9,8 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await getAuthSession(request)
-    if (!session) {
+    const session = await getServerSession(authOptions)
+    if (!session?.user) {
       return NextResponse.json(
         { error: "No autorizado. Inicie sesión para continuar." },
         { status: 401 }
@@ -17,8 +18,8 @@ export async function GET(
     }
 
     const { id } = await params
-    const userRole = session.user.role
-    const userId = session.user.id
+    const userRole = (session.user as any).role
+    const userId = (session.user as any).id
 
     const report = await db.expenseReport.findUnique({
       where: { id },
@@ -68,8 +69,8 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await getAuthSession(request)
-    if (!session) {
+    const session = await getServerSession(authOptions)
+    if (!session?.user) {
       return NextResponse.json(
         { error: "No autorizado. Inicie sesión para continuar." },
         { status: 401 }
@@ -78,9 +79,9 @@ export async function PUT(
 
     const { id } = await params
     const body = await request.json()
-    const { title, description, montoRendir, numeroBoleta } = body
-    const userRole = session.user.role
-    const userId = session.user.id
+    const { title, description } = body
+    const userRole = (session.user as any).role
+    const userId = (session.user as any).id
 
     // Verificar que el reporte existe
     const existingReport = await db.expenseReport.findUnique({
@@ -126,28 +127,10 @@ export async function PUT(
       }
     }
 
-    // Validar monto a rendir si se proporciona
-    if (montoRendir !== undefined && parseFloat(montoRendir) <= 0) {
-      return NextResponse.json(
-        { error: "El monto a rendir debe ser mayor a 0" },
-        { status: 400 }
-      )
-    }
-
-    // Validar número de boleta - no se puede dejar vacío si se proporciona
-    if (numeroBoleta !== undefined && numeroBoleta.trim() === "") {
-      return NextResponse.json(
-        { error: "El número de boleta no puede estar vacío" },
-        { status: 400 }
-      )
-    }
-
     // Actualizar reporte
     const updateData: any = {}
     if (title !== undefined) updateData.title = title.trim()
     if (description !== undefined) updateData.description = description?.trim() || null
-    if (montoRendir !== undefined) updateData.montoRendir = parseFloat(montoRendir) || 0
-    if (numeroBoleta !== undefined) updateData.numeroBoleta = numeroBoleta?.trim() || null
 
     const report = await db.expenseReport.update({
       where: { id },
@@ -183,8 +166,8 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await getAuthSession(request)
-    if (!session) {
+    const session = await getServerSession(authOptions)
+    if (!session?.user) {
       return NextResponse.json(
         { error: "No autorizado. Inicie sesión para continuar." },
         { status: 401 }
@@ -194,8 +177,8 @@ export async function PATCH(
     const { id } = await params
     const body = await request.json()
     const { status, reviewNote } = body
-    const userRole = session.user.role
-    const userId = session.user.id
+    const userRole = (session.user as any).role
+    const userId = (session.user as any).id
 
     // Validar estado
     const validStatuses = ["SUBMITTED", "APPROVED", "REJECTED", "MODIFICATION_REQUESTED"]
@@ -239,35 +222,6 @@ export async function PATCH(
       if (existingReport.items.length === 0) {
         return NextResponse.json(
           { error: "El reporte debe tener al menos un gasto para ser enviado" },
-          { status: 400 }
-        )
-      }
-      // Verificar que todos los items tengan foto de boleta
-      const itemsWithoutBoleta = existingReport.items.filter(item => !item.imageUrl)
-      if (itemsWithoutBoleta.length > 0) {
-        return NextResponse.json(
-          { error: `Todos los gastos deben tener foto de la boleta. Faltan ${itemsWithoutBoleta.length} foto(s).` },
-          { status: 400 }
-        )
-      }
-      // Verificar que todos los items tengan foto de la compra
-      const itemsWithoutCompra = existingReport.items.filter(item => !item.compraImageUrl)
-      if (itemsWithoutCompra.length > 0) {
-        return NextResponse.json(
-          { error: `Todos los gastos deben tener foto de la compra. Faltan ${itemsWithoutCompra.length} foto(s).` },
-          { status: 400 }
-        )
-      }
-      // Verificar que el reporte tenga monto a rendir y número de boleta
-      if (!existingReport.montoRendir || existingReport.montoRendir <= 0) {
-        return NextResponse.json(
-          { error: "El reporte debe tener un monto a rendir antes de enviarse" },
-          { status: 400 }
-        )
-      }
-      if (!existingReport.numeroBoleta || existingReport.numeroBoleta.trim() === "") {
-        return NextResponse.json(
-          { error: "El reporte debe tener un número de boleta antes de enviarse" },
           { status: 400 }
         )
       }
@@ -375,8 +329,8 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await getAuthSession(request)
-    if (!session) {
+    const session = await getServerSession(authOptions)
+    if (!session?.user) {
       return NextResponse.json(
         { error: "No autorizado. Inicie sesión para continuar." },
         { status: 401 }
@@ -384,8 +338,8 @@ export async function DELETE(
     }
 
     const { id } = await params
-    const userRole = session.user.role
-    const userId = session.user.id
+    const userRole = (session.user as any).role
+    const userId = (session.user as any).id
 
     // Verificar que el reporte existe
     const existingReport = await db.expenseReport.findUnique({

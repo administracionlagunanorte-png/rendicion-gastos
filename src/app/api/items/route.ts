@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from "next/server"
-import { getAuthSession } from "@/lib/auth-helper"
+import { getServerSession } from "next-auth"
+import { authOptions } from "@/lib/auth-config"
 import { db } from "@/lib/db"
 
 // POST /api/items - Crear nuevo item de gasto
 export async function POST(request: NextRequest) {
   try {
-    const session = await getAuthSession(request)
-    if (!session) {
+    const session = await getServerSession(authOptions)
+    if (!session?.user) {
       return NextResponse.json(
         { error: "No autorizado. Inicie sesión para continuar." },
         { status: 401 }
@@ -14,9 +15,19 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { description, amount, category, expenseDate, imageUrl, compraImageUrl, reportId } = body
-    const userId = session.user.id
-    const userRole = session.user.role
+    const {
+      description,
+      amount,
+      numeroBoleta,
+      montoRendir,
+      category,
+      expenseDate,
+      imageBoletaUrl,
+      imageCompraUrl,
+      reportId,
+    } = body
+    const userId = (session.user as any).id
+    const userRole = (session.user as any).role
 
     // Validaciones
     if (!description || description.trim() === "") {
@@ -29,6 +40,20 @@ export async function POST(request: NextRequest) {
     if (!amount || amount <= 0) {
       return NextResponse.json(
         { error: "El monto debe ser mayor a 0" },
+        { status: 400 }
+      )
+    }
+
+    if (!numeroBoleta || numeroBoleta.trim() === "") {
+      return NextResponse.json(
+        { error: "El número de boleta es requerido" },
+        { status: 400 }
+      )
+    }
+
+    if (!montoRendir || montoRendir <= 0) {
+      return NextResponse.json(
+        { error: "El monto a rendir debe ser mayor a 0" },
         { status: 400 }
       )
     }
@@ -47,16 +72,16 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    if (!imageUrl || imageUrl.trim() === "") {
+    if (!imageBoletaUrl || imageBoletaUrl.trim() === "") {
       return NextResponse.json(
-        { error: "La foto de la boleta es obligatoria" },
+        { error: "La foto de la boleta es requerida" },
         { status: 400 }
       )
     }
 
-    if (!compraImageUrl || compraImageUrl.trim() === "") {
+    if (!imageCompraUrl || imageCompraUrl.trim() === "") {
       return NextResponse.json(
-        { error: "La foto de la compra es obligatoria" },
+        { error: "La foto de la compra es requerida" },
         { status: 400 }
       )
     }
@@ -71,7 +96,7 @@ export async function POST(request: NextRequest) {
     // Verificar que el reporte existe y pertenece al usuario
     const report = await db.expenseReport.findUnique({
       where: { id: reportId },
-      include: { items: true }
+      include: { items: true },
     })
 
     if (!report) {
@@ -102,19 +127,21 @@ export async function POST(request: NextRequest) {
       data: {
         description: description.trim(),
         amount: parseFloat(amount),
+        numeroBoleta: numeroBoleta.trim(),
+        montoRendir: parseFloat(montoRendir),
         category: category.trim(),
         expenseDate: new Date(expenseDate),
-        imageUrl: imageUrl || null,
-        compraImageUrl: compraImageUrl || null,
-        reportId
-      }
+        imageBoletaUrl,
+        imageCompraUrl,
+        reportId,
+      },
     })
 
     // Actualizar monto total del reporte
     const newTotal = report.totalAmount + item.amount
     await db.expenseReport.update({
       where: { id: reportId },
-      data: { totalAmount: newTotal }
+      data: { totalAmount: newTotal },
     })
 
     return NextResponse.json(item, { status: 201 })
