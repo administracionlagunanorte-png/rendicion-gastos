@@ -11,6 +11,60 @@ interface ImageUploadProps {
   disabled?: boolean
 }
 
+/**
+ * Compress and resize an image file to a base64 data URL.
+ * - Max dimension: 1200px (preserves aspect ratio)
+ * - Output: JPEG at 80% quality (much smaller than PNG for photos)
+ * - Falls back to original if canvas is not supported
+ */
+async function compressImageToBase64(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const img = new Image()
+    const reader = new FileReader()
+
+    reader.onload = () => {
+      img.src = reader.result as string
+    }
+    reader.onerror = () => reject(new Error('Error al leer el archivo'))
+    reader.readAsDataURL(file)
+
+    img.onload = () => {
+      const MAX_DIMENSION = 1200
+      let { width, height } = img
+
+      // Resize if larger than max dimension
+      if (width > MAX_DIMENSION || height > MAX_DIMENSION) {
+        if (width > height) {
+          height = Math.round((height / width) * MAX_DIMENSION)
+          width = MAX_DIMENSION
+        } else {
+          width = Math.round((width / height) * MAX_DIMENSION)
+          height = MAX_DIMENSION
+        }
+      }
+
+      const canvas = document.createElement('canvas')
+      canvas.width = width
+      canvas.height = height
+
+      const ctx = canvas.getContext('2d')
+      if (!ctx) {
+        // Fallback: return original base64 if canvas not supported
+        resolve(reader.result as string)
+        return
+      }
+
+      ctx.drawImage(img, 0, 0, width, height)
+
+      // Compress as JPEG at 80% quality
+      const base64 = canvas.toDataURL('image/jpeg', 0.8)
+      resolve(base64)
+    }
+
+    img.onerror = () => reject(new Error('Error al procesar la imagen'))
+  })
+}
+
 export function ImageUpload({ value, onChange, disabled }: ImageUploadProps) {
   const [isUploading, setIsUploading] = useState(false)
   const [isDragging, setIsDragging] = useState(false)
@@ -22,14 +76,14 @@ export function ImageUpload({ value, onChange, disabled }: ImageUploadProps) {
     if (!allowedTypes.includes(file.type)) {
       return 'Solo se permiten archivos JPG y PNG'
     }
-    const maxSize = 5 * 1024 * 1024 // 5MB
+    const maxSize = 10 * 1024 * 1024 // 10MB original file limit
     if (file.size > maxSize) {
-      return 'El archivo no puede exceder los 5MB'
+      return 'El archivo no puede exceder los 10MB'
     }
     return null
   }
 
-  const uploadFile = useCallback(async (file: File) => {
+  const processFile = useCallback(async (file: File) => {
     const error = validateFile(file)
     if (error) {
       toast.error(error)
@@ -38,24 +92,12 @@ export function ImageUpload({ value, onChange, disabled }: ImageUploadProps) {
 
     setIsUploading(true)
     try {
-      const formData = new FormData()
-      formData.append('file', file)
-
-      const response = await fetch('/api/upload', {
-        method: 'POST',
-        body: formData,
-      })
-
-      if (!response.ok) {
-        const data = await response.json()
-        throw new Error(data.error || 'Error al subir la imagen')
-      }
-
-      const data = await response.json()
-      onChange(data.url)
-      toast.success('Imagen subida correctamente')
+      // Compress and convert to base64 on the client
+      const base64 = await compressImageToBase64(file)
+      onChange(base64)
+      toast.success('Imagen cargada correctamente')
     } catch (err: any) {
-      toast.error(err.message || 'Error al subir la imagen')
+      toast.error(err.message || 'Error al cargar la imagen')
     } finally {
       setIsUploading(false)
     }
@@ -64,7 +106,7 @@ export function ImageUpload({ value, onChange, disabled }: ImageUploadProps) {
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (file) {
-      uploadFile(file)
+      processFile(file)
     }
     // Reset input
     if (e.target) e.target.value = ''
@@ -85,7 +127,7 @@ export function ImageUpload({ value, onChange, disabled }: ImageUploadProps) {
     setIsDragging(false)
     const file = e.dataTransfer.files?.[0]
     if (file) {
-      uploadFile(file)
+      processFile(file)
     }
   }
 
@@ -137,7 +179,7 @@ export function ImageUpload({ value, onChange, disabled }: ImageUploadProps) {
         {isUploading ? (
           <div className="flex flex-col items-center gap-2">
             <Loader2 className="h-6 w-6 text-emerald-600 animate-spin" />
-            <span className="text-xs text-muted-foreground">Subiendo...</span>
+            <span className="text-xs text-muted-foreground">Procesando...</span>
           </div>
         ) : (
           <div className="flex flex-col items-center gap-1.5">
@@ -146,7 +188,7 @@ export function ImageUpload({ value, onChange, disabled }: ImageUploadProps) {
               Arrastra o haz clic para subir
             </span>
             <span className="text-[10px] text-muted-foreground/60">
-              JPG, PNG - máx. 5MB
+              JPG, PNG - máx. 10MB
             </span>
           </div>
         )}

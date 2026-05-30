@@ -10,6 +10,11 @@ const nextConfig: NextConfig = {
     remotePatterns: [],
     // Base64 data URLs are supported by default
   },
+  experimental: {
+    serverActions: {
+      bodySizeLimit: "10mb",
+    },
+  },
 };
 
 export default nextConfig;
