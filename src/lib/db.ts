@@ -1,6 +1,7 @@
 import { PrismaClient } from '@prisma/client'
 import { PrismaNeon } from '@prisma/adapter-neon'
 import { neon } from '@neondatabase/serverless'
+import { sql } from '@vercel/postgres'
 
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined
@@ -11,12 +12,19 @@ function createPrismaClient() {
 
   // If using Neon (postgresql://...neon.tech), use the serverless adapter
   if (databaseUrl && databaseUrl.includes('neon.tech')) {
-    const sql = neon(databaseUrl)
-    const adapter = new PrismaNeon(sql)
+    const neonSql = neon(databaseUrl)
+    const adapter = new PrismaNeon(neonSql)
     return new PrismaClient({ adapter } as any)
   }
 
-  // Fallback for local development (SQLite or local PostgreSQL)
+  // If POSTGRES_URL is available (Vercel Postgres / Neon via @vercel/postgres)
+  if (process.env.POSTGRES_URL) {
+    const neonSql = neon(process.env.POSTGRES_URL)
+    const adapter = new PrismaNeon(neonSql)
+    return new PrismaClient({ adapter } as any)
+  }
+
+  // Fallback for local development
   return new PrismaClient({
     log: process.env.NODE_ENV === 'development' ? ['query'] : ['error'],
   })
