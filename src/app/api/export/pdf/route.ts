@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
+import { formatCLP } from '@/lib/format-currency'
 
 export async function GET(request: NextRequest) {
   try {
@@ -60,8 +61,8 @@ function generatePDFHtml(report: any): string {
     <tr>
       <td style="padding: 8px; border-bottom: 1px solid #e5e7eb;">${item.description}</td>
       <td style="padding: 8px; border-bottom: 1px solid #e5e7eb; text-align: center;">${item.numeroBoleta || '-'}</td>
-      <td style="padding: 8px; border-bottom: 1px solid #e5e7eb; text-align: right;">$${item.amount.toLocaleString('es-CL')}</td>
-      <td style="padding: 8px; border-bottom: 1px solid #e5e7eb; text-align: right;">$${(item.montoRendir || 0).toLocaleString('es-CL')}</td>
+      <td style="padding: 8px; border-bottom: 1px solid #e5e7eb; text-align: right;">${formatCLP(item.amount)}</td>
+      <td style="padding: 8px; border-bottom: 1px solid #e5e7eb; text-align: right;">${formatCLP(item.montoRendir || 0)}</td>
       <td style="padding: 8px; border-bottom: 1px solid #e5e7eb;">${item.category}</td>
       <td style="padding: 8px; border-bottom: 1px solid #e5e7eb; text-align: center;">${new Date(item.expenseDate).toLocaleDateString('es-CL')}</td>
       <td style="padding: 8px; border-bottom: 1px solid #e5e7eb; text-align: center;">${item.imageBoletaUrl ? '<span style="color: #10b981;">Si</span>' : 'No'}</td>
@@ -139,7 +140,7 @@ function generatePDFHtml(report: any): string {
     </div>
     <div>
       <p style="color: #6b7280; font-size: 12px; margin-bottom: 2px;">Monto Total</p>
-      <p style="font-weight: 700; color: #059669; font-size: 18px;">$${report.totalAmount.toLocaleString('es-CL')}</p>
+      <p style="font-weight: 700; color: #059669; font-size: 18px;">${formatCLP(report.totalAmount)}</p>
     </div>
   </div>
 
@@ -164,8 +165,8 @@ function generatePDFHtml(report: any): string {
       <tr class="total-row">
         <td style="padding: 8px; border-top: 2px solid #059669;">TOTAL</td>
         <td style="padding: 8px; border-top: 2px solid #059669;"></td>
-        <td style="padding: 8px; border-top: 2px solid #059669; text-align: right; color: #059669; font-size: 14px;">$${report.totalAmount.toLocaleString('es-CL')}</td>
-        <td style="padding: 8px; border-top: 2px solid #059669; text-align: right; color: #2563eb; font-size: 14px;">$${totalMontoRendir.toLocaleString('es-CL')}</td>
+        <td style="padding: 8px; border-top: 2px solid #059669; text-align: right; color: #059669; font-size: 14px;">${formatCLP(report.totalAmount)}</td>
+        <td style="padding: 8px; border-top: 2px solid #059669; text-align: right; color: #2563eb; font-size: 14px;">${formatCLP(totalMontoRendir)}</td>
         <td style="padding: 8px; border-top: 2px solid #059669;"></td>
         <td style="padding: 8px; border-top: 2px solid #059669;"></td>
         <td style="padding: 8px; border-top: 2px solid #059669;"></td>

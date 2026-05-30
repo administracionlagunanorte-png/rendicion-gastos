@@ -1,6 +1,7 @@
 'use client'
 
 import { useQuery } from '@tanstack/react-query'
+import { formatCLP } from '@/lib/format-currency'
 import { motion } from 'framer-motion'
 import {
   FileText,
@@ -116,7 +117,7 @@ export function AdminDashboard() {
     },
     {
       title: 'Monto Aprobado',
-      value: `$${(stats?.totalAmountApproved ?? 0).toLocaleString('es-ES', { minimumFractionDigits: 2 })}`,
+      value: formatCLP(stats?.totalAmountApproved ?? 0),
       icon: <DollarSign className="h-5 w-5" />,
       color: 'text-emerald-700',
       bg: 'bg-emerald-50',
@@ -273,7 +274,7 @@ export function AdminDashboard() {
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium truncate">{report.title}</p>
                     <p className="text-xs text-muted-foreground">
-                      {report.user?.name} · {new Date(report.createdAt).toLocaleDateString('es-ES')} · ${report.totalAmount.toLocaleString('es-ES', { minimumFractionDigits: 2 })}
+                      {report.user?.name} · {new Date(report.createdAt).toLocaleDateString('es-CL')} · {formatCLP(report.totalAmount)}
                     </p>
                   </div>
                   <div className="flex items-center gap-2 ml-2">

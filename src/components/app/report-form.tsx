@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useSession } from '@/lib/auth-context'
+import { formatCLP } from '@/lib/format-currency'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
@@ -530,13 +531,13 @@ export function ReportForm() {
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-medium">Total Montos</span>
                   <span className="text-xl font-bold text-emerald-700">
-                    ${totalAmount.toLocaleString('es-ES', { minimumFractionDigits: 2 })}
+                    {formatCLP(totalAmount)}
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-medium">Total a Rendir</span>
                   <span className="text-xl font-bold text-blue-700">
-                    ${totalMontoRendir.toLocaleString('es-ES', { minimumFractionDigits: 2 })}
+                    {formatCLP(totalMontoRendir)}
                   </span>
                 </div>
               </div>

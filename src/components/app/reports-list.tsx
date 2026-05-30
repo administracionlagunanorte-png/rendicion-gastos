@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useSession } from '@/lib/auth-context'
+import { formatCLP } from '@/lib/format-currency'
 import { useQuery } from '@tanstack/react-query'
 import { motion } from 'framer-motion'
 import {
@@ -212,7 +213,7 @@ export function ReportsList() {
                       </div>
                       <div className="flex items-center gap-3 shrink-0">
                         <span className="text-sm font-bold text-emerald-700">
-                          ${report.totalAmount.toLocaleString('es-ES', { minimumFractionDigits: 2 })}
+                          {formatCLP(report.totalAmount)}
                         </span>
                         <Badge variant="outline" className={`text-[10px] ${status.color}`}>
                           {status.icon}
@@ -235,7 +236,7 @@ export function ReportsList() {
                           <span>{new Date(report.createdAt).toLocaleDateString('es-ES')}</span>
                         </div>
                         <span className="text-sm font-bold text-emerald-700">
-                          ${report.totalAmount.toLocaleString('es-ES', { minimumFractionDigits: 2 })}
+                          {formatCLP(report.totalAmount)}
                         </span>
                       </div>
                     </div>

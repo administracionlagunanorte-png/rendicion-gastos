@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
+import { formatCLPForExcel } from '@/lib/format-currency'
 import * as XLSX from 'xlsx'
 
 export async function GET(request: NextRequest) {
@@ -59,8 +60,8 @@ export async function GET(request: NextRequest) {
       'Solicitante': r.user.name,
       'Email': r.user.email,
       'Estado': getStatusLabel(r.status),
-      'Monto Total': r.totalAmount,
-      'Total a Rendir': r.items.reduce((sum: number, item: any) => sum + (item.montoRendir || 0), 0),
+      'Monto Total': formatCLPForExcel(r.totalAmount),
+      'Total a Rendir': formatCLPForExcel(r.items.reduce((sum: number, item: any) => sum + (item.montoRendir || 0), 0)),
       'Cantidad de Gastos': r.items.length,
       'Nota de Revisión': r.reviewNote || '',
       'Fecha Creación': r.createdAt.toLocaleDateString('es-CL'),
@@ -84,8 +85,8 @@ export async function GET(request: NextRequest) {
           'Estado Rendición': idx === 0 ? getStatusLabel(r.status) : '',
           'Descripción Gasto': item.description,
           'Número de Boleta': item.numeroBoleta || '',
-          'Monto': item.amount,
-          'Monto a Rendir': item.montoRendir || 0,
+          'Monto': formatCLPForExcel(item.amount),
+          'Monto a Rendir': formatCLPForExcel(item.montoRendir || 0),
           'Categoría': item.category,
           'Fecha Gasto': new Date(item.expenseDate).toLocaleDateString('es-CL'),
           'Foto Boleta': item.imageBoletaUrl ? 'Sí' : 'No',

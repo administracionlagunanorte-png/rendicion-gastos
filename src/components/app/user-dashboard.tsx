@@ -1,6 +1,7 @@
 'use client'
 
 import { useSession } from '@/lib/auth-context'
+import { formatCLP } from '@/lib/format-currency'
 import { useQuery } from '@tanstack/react-query'
 import { motion } from 'framer-motion'
 import {
@@ -75,7 +76,7 @@ export function UserDashboard() {
     },
     {
       title: 'Monto Aprobado',
-      value: `$${(stats?.myTotalApproved ?? 0).toLocaleString('es-ES', { minimumFractionDigits: 2 })}`,
+      value: formatCLP(stats?.myTotalApproved ?? 0),
       icon: <DollarSign className="h-5 w-5" />,
       color: 'text-emerald-700',
       bg: 'bg-emerald-50',
@@ -195,7 +196,7 @@ export function UserDashboard() {
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium truncate">{report.title}</p>
                       <p className="text-xs text-muted-foreground">
-                        {new Date(report.createdAt).toLocaleDateString('es-ES')} · ${report.totalAmount.toLocaleString('es-ES', { minimumFractionDigits: 2 })}
+                        {new Date(report.createdAt).toLocaleDateString('es-CL')} · {formatCLP(report.totalAmount)}
                       </p>
                     </div>
                     <Badge variant="outline" className={`text-[10px] ml-2 shrink-0 ${status.color}`}>

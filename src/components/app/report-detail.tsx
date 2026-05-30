@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useSession } from '@/lib/auth-context'
+import { formatCLP } from '@/lib/format-currency'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { motion } from 'framer-motion'
 import {
@@ -332,10 +333,10 @@ export function ReportDetail() {
                       </div>
                       <div className="flex flex-wrap gap-2 mt-2">
                         <span className="text-xs font-semibold text-emerald-700">
-                          Monto: ${item.amount?.toLocaleString('es-ES', { minimumFractionDigits: 2 })}
+                          Monto: {formatCLP(item.amount)}
                         </span>
                         <span className="text-xs font-semibold text-blue-700">
-                          A Rendir: ${item.montoRendir?.toLocaleString('es-ES', { minimumFractionDigits: 2 })}
+                          A Rendir: {formatCLP(item.montoRendir)}
                         </span>
                       </div>
                     </div>
@@ -391,13 +392,13 @@ export function ReportDetail() {
             <div className="flex items-center justify-between">
               <span className="text-sm font-semibold">Total Montos</span>
               <span className="text-2xl font-bold text-emerald-700">
-                ${report.totalAmount.toLocaleString('es-ES', { minimumFractionDigits: 2 })}
+                {formatCLP(report.totalAmount)}
               </span>
             </div>
             <div className="flex items-center justify-between">
               <span className="text-sm font-semibold">Total a Rendir</span>
               <span className="text-2xl font-bold text-blue-700">
-                ${totalMontoRendir.toLocaleString('es-ES', { minimumFractionDigits: 2 })}
+                {formatCLP(totalMontoRendir)}
               </span>
             </div>
           </div>
@@ -439,7 +440,7 @@ export function ReportDetail() {
                   <DialogHeader>
                     <DialogTitle>Confirmar Aprobación</DialogTitle>
                     <DialogDescription>
-                      ¿Está seguro de que desea aprobar esta rendición por ${report.totalAmount.toLocaleString('es-ES', { minimumFractionDigits: 2 })}?
+                      ¿Está seguro de que desea aprobar esta rendición por {formatCLP(report.totalAmount)}?
                     </DialogDescription>
                   </DialogHeader>
                   <DialogFooter>
