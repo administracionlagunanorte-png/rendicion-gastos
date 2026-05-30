@@ -1,13 +1,12 @@
 import { NextRequest, NextResponse } from "next/server"
-import { getServerSession } from "next-auth"
-import { authOptions } from "@/lib/auth-config"
+import { getAuthSession } from "@/lib/auth-helper"
 import { db } from "@/lib/db"
 
 // POST /api/items - Crear nuevo item de gasto
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user) {
+    const session = await getAuthSession(request)
+    if (!session) {
       return NextResponse.json(
         { error: "No autorizado. Inicie sesión para continuar." },
         { status: 401 }
@@ -26,8 +25,8 @@ export async function POST(request: NextRequest) {
       imageCompraUrl,
       reportId,
     } = body
-    const userId = (session.user as any).id
-    const userRole = (session.user as any).role
+    const userId = session.user.id
+    const userRole = session.user.role
 
     // Validaciones
     if (!description || description.trim() === "") {
