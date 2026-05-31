@@ -1,5 +1,6 @@
 'use client'
 
+import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { formatCLP } from '@/lib/format-currency'
 import { motion } from 'framer-motion'
