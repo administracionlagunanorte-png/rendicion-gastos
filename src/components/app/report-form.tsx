@@ -57,6 +57,7 @@ export function ReportForm() {
   const queryClient = useQueryClient()
   const { selectedReportId, setCurrentView, setSelectedReportId } = useAppStore()
   const isEditing = !!selectedReportId
+  const isAdmin = session?.user?.role === 'ADMIN'
 
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
@@ -65,6 +66,7 @@ export function ReportForm() {
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   // Load existing report if editing
+  const [reportStatus, setReportStatus] = useState<string>('')
   const { data: report, isLoading: reportLoading } = useQuery({
     queryKey: ['report', selectedReportId],
     queryFn: async () => {
@@ -79,6 +81,7 @@ export function ReportForm() {
     if (report) {
       setTitle(report.title)
       setDescription(report.description || '')
+      setReportStatus(report.status)
       setItems(
         report.items.map((item: any) => ({
           id: item.id,
@@ -252,8 +255,8 @@ export function ReportForm() {
         }
       }
 
-      // Submit for review if requested
-      if (submitForReview) {
+      // Submit for review if requested (only for non-approved reports)
+      if (submitForReview && reportStatus !== 'APPROVED') {
         const res = await fetch(`/api/reports/${reportId}`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
@@ -264,6 +267,10 @@ export function ReportForm() {
           throw new Error(data.error || 'Error al enviar reporte')
         }
         toast.success('Rendición enviada para revisión')
+        setSelectedReportId(reportId)
+        setCurrentView('report-detail')
+      } else if (reportStatus === 'APPROVED') {
+        toast.success('Rendición aprobada modificada correctamente')
         setSelectedReportId(reportId)
         setCurrentView('report-detail')
       } else {
@@ -313,10 +320,14 @@ export function ReportForm() {
         </Button>
         <div>
           <h2 className="text-xl font-bold">
-            {isEditing ? 'Editar Rendición' : 'Nueva Rendición'}
+            {isEditing && reportStatus === 'APPROVED' ? 'Modificar Rendición Aprobada' : isEditing ? 'Editar Rendición' : 'Nueva Rendición'}
           </h2>
           <p className="text-sm text-muted-foreground">
-            {isEditing ? 'Modifique los datos de la rendición' : 'Complete los datos para crear una nueva rendición'}
+            {isEditing && reportStatus === 'APPROVED'
+              ? 'Como administrador, puede modificar esta rendición ya aprobada'
+              : isEditing
+              ? 'Modifique los datos de la rendición'
+              : 'Complete los datos para crear una nueva rendición'}
           </p>
         </div>
       </div>
@@ -548,33 +559,51 @@ export function ReportForm() {
 
       {/* Actions */}
       <div className="flex flex-col sm:flex-row gap-3 pb-6">
-        <Button
-          type="button"
-          variant="outline"
-          onClick={() => handleSave(false)}
-          disabled={isSaving || isSubmitting}
-          className="flex-1 shadow-sm"
-        >
-          {isSaving ? (
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-          ) : (
-            <Save className="mr-2 h-4 w-4" />
-          )}
-          Guardar Borrador
-        </Button>
-        <Button
-          type="button"
-          onClick={() => handleSave(true)}
-          disabled={isSaving || isSubmitting}
-          className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm"
-        >
-          {isSubmitting ? (
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-          ) : (
-            <Send className="mr-2 h-4 w-4" />
-          )}
-          Enviar para Revisión
-        </Button>
+        {isEditing && reportStatus === 'APPROVED' ? (
+          <Button
+            type="button"
+            onClick={() => handleSave(false)}
+            disabled={isSaving || isSubmitting}
+            className="flex-1 bg-blue-600 hover:bg-blue-700 text-white shadow-sm"
+          >
+            {isSaving ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <Save className="mr-2 h-4 w-4" />
+            )}
+            Guardar Cambios en Rendición Aprobada
+          </Button>
+        ) : (
+          <>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => handleSave(false)}
+              disabled={isSaving || isSubmitting}
+              className="flex-1 shadow-sm"
+            >
+              {isSaving ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <Save className="mr-2 h-4 w-4" />
+              )}
+              Guardar Borrador
+            </Button>
+            <Button
+              type="button"
+              onClick={() => handleSave(true)}
+              disabled={isSaving || isSubmitting}
+              className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm"
+            >
+              {isSubmitting ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <Send className="mr-2 h-4 w-4" />
+              )}
+              Enviar para Revisión
+            </Button>
+          </>
+        )}
       </div>
     </div>
   )

@@ -113,10 +113,12 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Solo se pueden agregar items a reportes en BORRADOR o MODIFICACIÓN SOLICITADA
-    if (!["DRAFT", "MODIFICATION_REQUESTED"].includes(report.status)) {
+    // Solo se pueden agregar items a reportes en BORRADOR, MODIFICACIÓN SOLICITADA, o APROBADO (solo admin)
+    const allowedStatuses = ["DRAFT", "MODIFICATION_REQUESTED"]
+    if (userRole === "ADMIN") allowedStatuses.push("APPROVED")
+    if (!allowedStatuses.includes(report.status)) {
       return NextResponse.json(
-        { error: "Solo se pueden agregar gastos a reportes en borrador o con modificación solicitada" },
+        { error: "Solo se pueden agregar gastos a reportes en borrador, con modificación solicitada, o aprobados (solo admin)" },
         { status: 400 }
       )
     }

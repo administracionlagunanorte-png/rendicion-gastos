@@ -14,8 +14,8 @@ export async function GET(request: NextRequest) {
     const report = await db.expenseReport.findUnique({
       where: { id: reportId },
       include: {
-        user: { select: { id: true, name: true, email: true } },
-        items: true
+        user: { select: { id: true, name: true, email: true, role: true } },
+        items: { orderBy: { createdAt: 'asc' } }
       }
     })
 
@@ -29,7 +29,6 @@ export async function GET(request: NextRequest) {
     return new NextResponse(htmlContent, {
       headers: {
         'Content-Type': 'text/html; charset=utf-8',
-        'Content-Disposition': `inline; filename="rendicion_${reportId}.html"`,
       },
     })
   } catch (error) {
@@ -65,30 +64,85 @@ function generatePDFHtml(report: any): string {
       <td style="padding: 8px; border-bottom: 1px solid #e5e7eb; text-align: right;">${formatCLP(item.montoRendir || 0)}</td>
       <td style="padding: 8px; border-bottom: 1px solid #e5e7eb;">${item.category}</td>
       <td style="padding: 8px; border-bottom: 1px solid #e5e7eb; text-align: center;">${new Date(item.expenseDate).toLocaleDateString('es-CL')}</td>
-      <td style="padding: 8px; border-bottom: 1px solid #e5e7eb; text-align: center;">${item.imageBoletaUrl ? '<span style="color: #10b981;">Si</span>' : 'No'}</td>
-      <td style="padding: 8px; border-bottom: 1px solid #e5e7eb; text-align: center;">${item.imageCompraUrl ? '<span style="color: #10b981;">Si</span>' : 'No'}</td>
     </tr>
   `).join('')
 
-  const imageSection = report.items.map((item: any) => {
+  // Build image section with actual embedded images
+  const imageSection = report.items.map((item: any, index: number) => {
     const parts = []
     if (item.imageBoletaUrl) {
       parts.push(`
-        <div style="margin-bottom: 12px; page-break-inside: avoid;">
-          <p style="font-weight: 600; margin-bottom: 4px; color: #374151; font-size: 13px;">${item.description} - Foto de la Boleta</p>
-          <img src="${item.imageBoletaUrl}" alt="Boleta: ${item.description}" style="max-width: 350px; max-height: 250px; border: 1px solid #e5e7eb; border-radius: 8px;" />
+        <div style="margin-bottom: 16px; page-break-inside: avoid; border: 1px solid #e5e7eb; border-radius: 8px; padding: 12px; background: #fafafa;">
+          <p style="font-weight: 600; margin-bottom: 8px; color: #374151; font-size: 13px;">
+            Gasto #${index + 1}: ${item.description} — Foto de la Boleta
+          </p>
+          <p style="font-size: 11px; color: #6b7280; margin-bottom: 6px;">N. Boleta: ${item.numeroBoleta} | Monto: ${formatCLP(item.amount)} | A Rendir: ${formatCLP(item.montoRendir)}</p>
+          <img src="${item.imageBoletaUrl}" alt="Boleta: ${item.description}" style="max-width: 100%; max-height: 400px; border-radius: 6px; display: block; margin: 0 auto;" />
         </div>
       `)
     }
     if (item.imageCompraUrl) {
       parts.push(`
-        <div style="margin-bottom: 12px; page-break-inside: avoid;">
-          <p style="font-weight: 600; margin-bottom: 4px; color: #374151; font-size: 13px;">${item.description} - Foto de la Compra</p>
-          <img src="${item.imageCompraUrl}" alt="Compra: ${item.description}" style="max-width: 350px; max-height: 250px; border: 1px solid #e5e7eb; border-radius: 8px;" />
+        <div style="margin-bottom: 16px; page-break-inside: avoid; border: 1px solid #e5e7eb; border-radius: 8px; padding: 12px; background: #fafafa;">
+          <p style="font-weight: 600; margin-bottom: 8px; color: #374151; font-size: 13px;">
+            Gasto #${index + 1}: ${item.description} — Foto de la Compra
+          </p>
+          <img src="${item.imageCompraUrl}" alt="Compra: ${item.description}" style="max-width: 100%; max-height: 400px; border-radius: 6px; display: block; margin: 0 auto;" />
         </div>
       `)
     }
     return parts.join('')
+  }).join('')
+
+  // Build pairs of images side by side where both exist
+  const imagePairs = report.items.map((item: any, index: number) => {
+    const hasBoth = item.imageBoletaUrl && item.imageCompraUrl
+    if (hasBoth) {
+      return `
+        <div style="margin-bottom: 20px; page-break-inside: avoid; border: 1px solid #e5e7eb; border-radius: 10px; padding: 14px; background: #fafafa;">
+          <p style="font-weight: 600; margin-bottom: 4px; color: #1f2937; font-size: 14px;">
+            Gasto #${index + 1}: ${item.description}
+          </p>
+          <p style="font-size: 11px; color: #6b7280; margin-bottom: 10px;">
+            N. Boleta: ${item.numeroBoleta} | Monto: ${formatCLP(item.amount)} | A Rendir: ${formatCLP(item.montoRendir)} | ${item.category} | ${new Date(item.expenseDate).toLocaleDateString('es-CL')}
+          </p>
+          <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+            <div style="flex: 1; min-width: 280px;">
+              <p style="font-size: 11px; font-weight: 600; color: #059669; margin-bottom: 4px;">Foto de la Boleta</p>
+              <img src="${item.imageBoletaUrl}" alt="Boleta: ${item.description}" style="width: 100%; max-height: 350px; object-fit: contain; border-radius: 6px; border: 1px solid #e5e7eb;" />
+            </div>
+            <div style="flex: 1; min-width: 280px;">
+              <p style="font-size: 11px; font-weight: 600; color: #2563eb; margin-bottom: 4px;">Foto de la Compra</p>
+              <img src="${item.imageCompraUrl}" alt="Compra: ${item.description}" style="width: 100%; max-height: 350px; object-fit: contain; border-radius: 6px; border: 1px solid #e5e7eb;" />
+            </div>
+          </div>
+        </div>
+      `
+    } else {
+      const parts = []
+      if (item.imageBoletaUrl) {
+        parts.push(`
+          <div style="margin-bottom: 16px; page-break-inside: avoid; border: 1px solid #e5e7eb; border-radius: 8px; padding: 12px; background: #fafafa;">
+            <p style="font-weight: 600; margin-bottom: 4px; color: #1f2937; font-size: 13px;">
+              Gasto #${index + 1}: ${item.description} — Foto de la Boleta
+            </p>
+            <p style="font-size: 11px; color: #6b7280; margin-bottom: 6px;">N. Boleta: ${item.numeroBoleta} | Monto: ${formatCLP(item.amount)}</p>
+            <img src="${item.imageBoletaUrl}" alt="Boleta: ${item.description}" style="max-width: 100%; max-height: 400px; border-radius: 6px; display: block; margin: 0 auto;" />
+          </div>
+        `)
+      }
+      if (item.imageCompraUrl) {
+        parts.push(`
+          <div style="margin-bottom: 16px; page-break-inside: avoid; border: 1px solid #e5e7eb; border-radius: 8px; padding: 12px; background: #fafafa;">
+            <p style="font-weight: 600; margin-bottom: 4px; color: #1f2937; font-size: 13px;">
+              Gasto #${index + 1}: ${item.description} — Foto de la Compra
+            </p>
+            <img src="${item.imageCompraUrl}" alt="Compra: ${item.description}" style="max-width: 100%; max-height: 400px; border-radius: 6px; display: block; margin: 0 auto;" />
+          </div>
+        `)
+      }
+      return parts.join('')
+    }
   }).join('')
 
   return `<!DOCTYPE html>
@@ -99,65 +153,69 @@ function generatePDFHtml(report: any): string {
   <title>Rendición de Gastos - ${report.title}</title>
   <style>
     @media print {
-      body { margin: 0; padding: 20px; }
-      .no-print { display: none; }
+      body { margin: 0; padding: 15px; }
+      .no-print { display: none !important; }
       .page-break { page-break-before: always; }
+      @page { margin: 1cm; }
     }
     body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; color: #1f2937; max-width: 900px; margin: 0 auto; padding: 20px; }
-    h1 { color: #059669; font-size: 24px; margin-bottom: 4px; }
-    h2 { color: #374151; font-size: 18px; margin-top: 30px; margin-bottom: 12px; border-bottom: 2px solid #059669; padding-bottom: 6px; }
-    table { width: 100%; border-collapse: collapse; font-size: 12px; }
-    th { background-color: #059669; color: white; padding: 8px; text-align: left; font-size: 11px; }
+    h1 { color: #059669; font-size: 22px; margin-bottom: 4px; }
+    h2 { color: #374151; font-size: 16px; margin-top: 28px; margin-bottom: 10px; border-bottom: 2px solid #059669; padding-bottom: 6px; }
+    table { width: 100%; border-collapse: collapse; font-size: 11px; }
+    th { background-color: #059669; color: white; padding: 7px 8px; text-align: left; font-size: 10px; }
     .total-row td { font-weight: 700; border-top: 2px solid #059669; padding: 8px; }
   </style>
 </head>
 <body>
-  <div class="no-print" style="background: #ecfdf5; border: 1px solid #059669; border-radius: 8px; padding: 12px 20px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center;">
-    <span style="color: #065f46; font-weight: 600;">Vista previa del documento</span>
-    <button onclick="window.print()" style="background: #059669; color: white; border: none; padding: 8px 20px; border-radius: 6px; cursor: pointer; font-weight: 600;">Imprimir / Guardar PDF</button>
+  <div class="no-print" style="background: linear-gradient(135deg, #ecfdf5, #d1fae5); border: 1px solid #059669; border-radius: 10px; padding: 14px 20px; margin-bottom: 24px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100;">
+    <div>
+      <span style="color: #065f46; font-weight: 600; font-size: 14px;">Vista previa del documento</span>
+      <p style="color: #047857; font-size: 11px; margin-top: 2px;">Las imágenes se incluyen en la vista previa y en la impresión PDF</p>
+    </div>
+    <button onclick="window.print()" style="background: #059669; color: white; border: none; padding: 10px 24px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 13px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+      🖨️ Imprimir / Guardar PDF
+    </button>
   </div>
 
-  <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 24px;">
+  <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px;">
     <div>
       <h1>Rendición de Gastos</h1>
-      <p style="color: #6b7280; font-size: 14px;">${report.title}</p>
+      <p style="color: #6b7280; font-size: 13px; margin-top: 2px;">${report.title}</p>
     </div>
-    <span style="background: ${statusColors[report.status] || '#6b7280'}; color: white; padding: 4px 14px; border-radius: 20px; font-size: 13px; font-weight: 600;">${statusLabels[report.status] || report.status}</span>
+    <span style="background: ${statusColors[report.status] || '#6b7280'}; color: white; padding: 5px 16px; border-radius: 20px; font-size: 12px; font-weight: 600;">${statusLabels[report.status] || report.status}</span>
   </div>
 
-  <div style="background: #f9fafb; border-radius: 10px; padding: 16px; margin-bottom: 24px; display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+  <div style="background: #f9fafb; border-radius: 10px; padding: 14px; margin-bottom: 20px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
     <div>
-      <p style="color: #6b7280; font-size: 12px; margin-bottom: 2px;">Solicitante</p>
-      <p style="font-weight: 600;">${report.user.name}</p>
+      <p style="color: #6b7280; font-size: 11px; margin-bottom: 1px;">Solicitante</p>
+      <p style="font-weight: 600; font-size: 13px;">${report.user.name}</p>
     </div>
     <div>
-      <p style="color: #6b7280; font-size: 12px; margin-bottom: 2px;">Email</p>
-      <p style="font-weight: 600;">${report.user.email}</p>
+      <p style="color: #6b7280; font-size: 11px; margin-bottom: 1px;">Email</p>
+      <p style="font-weight: 600; font-size: 13px;">${report.user.email}</p>
     </div>
     <div>
-      <p style="color: #6b7280; font-size: 12px; margin-bottom: 2px;">Fecha Creación</p>
-      <p style="font-weight: 600;">${new Date(report.createdAt).toLocaleDateString('es-CL')}</p>
+      <p style="color: #6b7280; font-size: 11px; margin-bottom: 1px;">Fecha Creación</p>
+      <p style="font-weight: 600; font-size: 13px;">${new Date(report.createdAt).toLocaleDateString('es-CL')}</p>
     </div>
     <div>
-      <p style="color: #6b7280; font-size: 12px; margin-bottom: 2px;">Monto Total</p>
-      <p style="font-weight: 700; color: #059669; font-size: 18px;">${formatCLP(report.totalAmount)}</p>
+      <p style="color: #6b7280; font-size: 11px; margin-bottom: 1px;">Monto Total</p>
+      <p style="font-weight: 700; color: #059669; font-size: 16px;">${formatCLP(report.totalAmount)}</p>
     </div>
   </div>
 
-  ${report.description ? `<p style="margin-bottom: 24px; color: #4b5563;"><strong>Descripcion:</strong> ${report.description}</p>` : ''}
+  ${report.description ? `<p style="margin-bottom: 20px; color: #4b5563; font-size: 13px;"><strong>Descripción:</strong> ${report.description}</p>` : ''}
 
   <h2>Detalle de Gastos</h2>
   <table>
     <thead>
       <tr>
-        <th>Descripcion</th>
+        <th>Descripción</th>
         <th style="text-align: center;">N. Boleta</th>
         <th style="text-align: right;">Monto</th>
         <th style="text-align: right;">Monto a Rendir</th>
-        <th>Categoria</th>
+        <th>Categoría</th>
         <th style="text-align: center;">Fecha</th>
-        <th style="text-align: center;">Foto Boleta</th>
-        <th style="text-align: center;">Foto Compra</th>
       </tr>
     </thead>
     <tbody>
@@ -165,27 +223,30 @@ function generatePDFHtml(report: any): string {
       <tr class="total-row">
         <td style="padding: 8px; border-top: 2px solid #059669;">TOTAL</td>
         <td style="padding: 8px; border-top: 2px solid #059669;"></td>
-        <td style="padding: 8px; border-top: 2px solid #059669; text-align: right; color: #059669; font-size: 14px;">${formatCLP(report.totalAmount)}</td>
-        <td style="padding: 8px; border-top: 2px solid #059669; text-align: right; color: #2563eb; font-size: 14px;">${formatCLP(totalMontoRendir)}</td>
-        <td style="padding: 8px; border-top: 2px solid #059669;"></td>
-        <td style="padding: 8px; border-top: 2px solid #059669;"></td>
+        <td style="padding: 8px; border-top: 2px solid #059669; text-align: right; color: #059669; font-size: 13px;">${formatCLP(report.totalAmount)}</td>
+        <td style="padding: 8px; border-top: 2px solid #059669; text-align: right; color: #2563eb; font-size: 13px;">${formatCLP(totalMontoRendir)}</td>
         <td style="padding: 8px; border-top: 2px solid #059669;"></td>
         <td style="padding: 8px; border-top: 2px solid #059669;"></td>
       </tr>
     </tbody>
   </table>
 
-  ${imageSection ? `<div class="page-break"></div><h2>Comprobantes Adjuntos</h2>${imageSection}` : ''}
+  ${imagePairs ? `<div class="page-break"></div><h2>Comprobantes Adjuntos (Fotos)</h2><p style="font-size: 11px; color: #6b7280; margin-bottom: 16px;">A continuación se muestran las fotografías de las boletas y compras adjuntas a cada gasto.</p>${imagePairs}` : ''}
 
   ${report.reviewNote ? `
-  <div style="margin-top: 30px; background: #fef3c7; border: 1px solid #f59e0b; border-radius: 8px; padding: 16px;">
-    <p style="font-weight: 600; color: #92400e; margin-bottom: 4px;">Nota de Revision</p>
-    <p style="color: #78350f;">${report.reviewNote}</p>
+  <div style="margin-top: 24px; background: #fef3c7; border: 1px solid #f59e0b; border-radius: 8px; padding: 14px;">
+    <p style="font-weight: 600; color: #92400e; margin-bottom: 4px; font-size: 13px;">Nota de Revisión</p>
+    <p style="color: #78350f; font-size: 12px;">${report.reviewNote}</p>
   </div>` : ''}
 
-  <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #e5e7eb; color: #9ca3af; font-size: 12px; display: flex; justify-content: space-between;">
+  ${report.reviewedBy ? `
+  <div style="margin-top: 12px; font-size: 11px; color: #6b7280;">
+    <p>Revisado el ${report.reviewedAt ? new Date(report.reviewedAt).toLocaleDateString('es-CL') : '-'}</p>
+  </div>` : ''}
+
+  <div style="margin-top: 36px; padding-top: 16px; border-top: 1px solid #e5e7eb; color: #9ca3af; font-size: 11px; display: flex; justify-content: space-between;">
     <span>Generado el ${new Date().toLocaleDateString('es-CL')} a las ${new Date().toLocaleTimeString('es-CL')}</span>
-    <span>Sistema de Rendicion de Gastos</span>
+    <span>Sistema de Rendición de Gastos</span>
   </div>
 </body>
 </html>`

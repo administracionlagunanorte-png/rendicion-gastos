@@ -52,10 +52,12 @@ export async function PUT(
       )
     }
 
-    // Solo se puede editar si el reporte está en BORRADOR o MODIFICACIÓN SOLICITADA
-    if (!["DRAFT", "MODIFICATION_REQUESTED"].includes(existingItem.report.status)) {
+    // Solo se puede editar si el reporte está en BORRADOR, MODIFICACIÓN SOLICITADA, o si es admin y está APROBADO
+    const allowedStatuses = ["DRAFT", "MODIFICATION_REQUESTED"]
+    if (userRole === "ADMIN") allowedStatuses.push("APPROVED")
+    if (!allowedStatuses.includes(existingItem.report.status)) {
       return NextResponse.json(
-        { error: "Solo se pueden editar gastos de reportes en borrador o con modificación solicitada" },
+        { error: "Solo se pueden editar gastos de reportes en borrador, con modificación solicitada, o aprobados (solo admin)" },
         { status: 400 }
       )
     }
@@ -155,10 +157,12 @@ export async function DELETE(
       )
     }
 
-    // Solo se puede eliminar si el reporte está en BORRADOR o MODIFICACIÓN SOLICITADA
-    if (!["DRAFT", "MODIFICATION_REQUESTED"].includes(existingItem.report.status)) {
+    // Solo se puede eliminar si el reporte está en BORRADOR, MODIFICACIÓN SOLICITADA, o si es admin y está APROBADO
+    const allowedStatuses = ["DRAFT", "MODIFICATION_REQUESTED"]
+    if (userRole === "ADMIN") allowedStatuses.push("APPROVED")
+    if (!allowedStatuses.includes(existingItem.report.status)) {
       return NextResponse.json(
-        { error: "Solo se pueden eliminar gastos de reportes en borrador o con modificación solicitada" },
+        { error: "Solo se pueden eliminar gastos de reportes en borrador, con modificación solicitada, o aprobados (solo admin)" },
         { status: 400 }
       )
     }

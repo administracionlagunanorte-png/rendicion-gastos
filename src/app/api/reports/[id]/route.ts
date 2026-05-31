@@ -95,6 +95,7 @@ export async function PUT(
     }
 
     // Solo el dueño puede editar (y solo si está en BORRADOR o MODIFICACIÓN SOLICITADA)
+    // Admin puede editar también reportes APROBADOS
     if (existingReport.userId !== userId && userRole !== "ADMIN") {
       return NextResponse.json(
         { error: "No tiene permisos para editar este reporte" },
@@ -102,10 +103,12 @@ export async function PUT(
       )
     }
 
-    // Solo se puede editar si está en BORRADOR o MODIFICACIÓN SOLICITADA
-    if (!["DRAFT", "MODIFICATION_REQUESTED"].includes(existingReport.status)) {
+    // Solo se puede editar si está en BORRADOR, MODIFICACIÓN SOLICITADA, o APROBADO (solo admin)
+    const allowedStatuses = ["DRAFT", "MODIFICATION_REQUESTED"]
+    if (userRole === "ADMIN") allowedStatuses.push("APPROVED")
+    if (!allowedStatuses.includes(existingReport.status)) {
       return NextResponse.json(
-        { error: "Solo se pueden editar reportes en borrador o con modificación solicitada" },
+        { error: "Solo se pueden editar reportes en borrador, con modificación solicitada, o aprobados (solo admin)" },
         { status: 400 }
       )
     }

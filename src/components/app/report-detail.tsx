@@ -196,17 +196,24 @@ export function ReportDetail() {
 
   const handleExport = async (format: 'excel' | 'pdf') => {
     try {
-      const url = `/api/export/${format}?reportId=${selectedReportId}`
-      const res = await fetch(url)
-      if (!res.ok) throw new Error('Error al exportar')
-      const blob = await res.blob()
-      const downloadUrl = URL.createObjectURL(blob)
-      const a = document.createElement('a')
-      a.href = downloadUrl
-      a.download = `rendicion-${selectedReportId}.${format === 'excel' ? 'xlsx' : 'pdf'}`
-      a.click()
-      URL.revokeObjectURL(downloadUrl)
-      toast.success('Exportación completada')
+      if (format === 'pdf') {
+        // Open PDF (HTML with images) in a new tab for proper rendering with images
+        const url = `/api/export/pdf?reportId=${selectedReportId}`
+        window.open(url, '_blank')
+        toast.success('Documento abierto en nueva pestaña. Use Ctrl+P para guardar como PDF.')
+      } else {
+        const url = `/api/export/excel?reportId=${selectedReportId}`
+        const res = await fetch(url)
+        if (!res.ok) throw new Error('Error al exportar')
+        const blob = await res.blob()
+        const downloadUrl = URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = downloadUrl
+        a.download = `rendicion-${selectedReportId}.xlsx`
+        a.click()
+        URL.revokeObjectURL(downloadUrl)
+        toast.success('Exportación completada')
+      }
     } catch {
       toast.error('Error al exportar la rendición')
     }
@@ -235,7 +242,8 @@ export function ReportDetail() {
   const canEdit = (report.userId === userId || isAdmin) && ['DRAFT', 'MODIFICATION_REQUESTED'].includes(report.status)
   const canSubmit = (report.userId === userId || isAdmin) && ['DRAFT', 'MODIFICATION_REQUESTED'].includes(report.status) && report.items?.length > 0
   const canReview = isAdmin && report.userId !== userId && ['SUBMITTED', 'MODIFICATION_REQUESTED'].includes(report.status)
-  const canAddItem = canEdit
+  const canAdminModify = isAdmin && report.status === 'APPROVED'
+  const canAddItem = canEdit || canAdminModify
 
   // Calculate total monto a rendir
   const totalMontoRendir = report.items?.reduce((sum: number, item: any) => sum + (item.montoRendir || 0), 0) || 0
@@ -328,6 +336,12 @@ export function ReportDetail() {
             <p className="text-xs text-blue-600 mt-1 flex items-center gap-1">
               <Shield className="h-3 w-3" />
               Como administrador, su rendición se aprobará automáticamente al enviarla
+            </p>
+          )}
+          {canAdminModify && (
+            <p className="text-xs text-blue-600 mt-1 flex items-center gap-1">
+              <Shield className="h-3 w-3" />
+              Como administrador, puede modificar esta rendición aprobada
             </p>
           )}
         </div>
@@ -453,7 +467,7 @@ export function ReportDetail() {
                     </div>
 
                     {/* Edit & Delete buttons */}
-                    {canEdit && (
+                    {(canEdit || canAdminModify) && (
                       <div className="flex items-center gap-1 shrink-0">
                         <Button
                           variant="ghost"
@@ -660,7 +674,7 @@ export function ReportDetail() {
       )}
 
       {/* User & Admin Actions */}
-      {(canEdit || canSubmit) && (
+      {(canEdit || canSubmit || canAdminModify) && (
         <Card className="shadow-sm">
           <CardContent className="p-4">
             <div className="flex flex-col sm:flex-row gap-3">
@@ -672,6 +686,16 @@ export function ReportDetail() {
                 >
                   <FileEdit className="mr-2 h-4 w-4" />
                   Editar Rendición Completa
+                </Button>
+              )}
+              {canAdminModify && (
+                <Button
+                  variant="outline"
+                  className="flex-1 border-blue-300 text-blue-700 hover:bg-blue-50"
+                  onClick={() => setCurrentView('edit-report')}
+                >
+                  <FileEdit className="mr-2 h-4 w-4" />
+                  Modificar Rendición Aprobada
                 </Button>
               )}
               {canSubmit && (
