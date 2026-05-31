@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { formatCLP } from '@/lib/format-currency'
+import { LOGO_BASE64 } from '@/lib/logo'
 
 export async function GET(request: NextRequest) {
   try {
@@ -151,7 +152,7 @@ function generatePDFHtml(report: any): string {
 
   <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px;">
     <div style="display: flex; align-items: center; gap: 14px;">
-      <img src="/logo.jpg" alt="Laguna Norte" style="height: 48px; width: 48px; border-radius: 10px; object-fit: cover;" onerror="this.style.display='none'" />
+      <img src="${LOGO_BASE64}" alt="Laguna Norte" style="height: 48px; width: 48px; border-radius: 10px; object-fit: cover;" />
       <div>
         <h1 style="margin-bottom: 2px;">Laguna Norte — Rendición de Gastos</h1>
         <p style="color: #6b7280; font-size: 13px; margin-top: 2px;">${report.title}${report.correlativeNumber ? ` — R-${String(report.correlativeNumber).padStart(3, '0')}` : ''}</p>

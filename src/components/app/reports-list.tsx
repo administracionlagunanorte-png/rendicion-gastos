@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useSession } from '@/lib/auth-context'
 import { formatCLP } from '@/lib/format-currency'
 import { useQuery } from '@tanstack/react-query'
@@ -39,8 +39,21 @@ export function ReportsList() {
   const { filters, setFilters, resetFilters, setCurrentView, setSelectedReportId } = useAppStore()
   const [page, setPage] = useState(1)
   const [search, setSearch] = useState('')
+  const [categories, setCategories] = useState<{id: string; name: string; icon: string}[]>([])
   const pageSize = 10
   const isAdmin = session?.user?.role === 'ADMIN'
+
+  // Fetch categories for filter
+  useEffect(() => {
+    fetch('/api/categories')
+      .then((res) => res.json())
+      .then((data) => {
+        if (Array.isArray(data)) {
+          setCategories(data)
+        }
+      })
+      .catch(() => {})
+  }, [])
 
   const buildQuery = () => {
     const params = new URLSearchParams()
@@ -141,12 +154,11 @@ export function ReportsList() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Todas</SelectItem>
-                  <SelectItem value="Alimentación">Alimentación</SelectItem>
-                  <SelectItem value="Transporte">Transporte</SelectItem>
-                  <SelectItem value="Alojamiento">Alojamiento</SelectItem>
-                  <SelectItem value="Entretenimiento">Entretenimiento</SelectItem>
-                  <SelectItem value="Oficina">Oficina</SelectItem>
-                  <SelectItem value="Otro">Otro</SelectItem>
+                  {categories.map((cat) => (
+                    <SelectItem key={cat.id} value={cat.name}>
+                      {cat.icon} {cat.name}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>

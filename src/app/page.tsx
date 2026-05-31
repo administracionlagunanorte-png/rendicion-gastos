@@ -14,9 +14,7 @@ import { ReportDetail } from '@/components/app/report-detail'
 import { ReportsList } from '@/components/app/reports-list'
 import { NotificationsPanel } from '@/components/app/notifications-panel'
 import { UsersPanel } from '@/components/app/users-panel'
-import { Button } from '@/components/ui/button'
-import { Database, Loader2 } from 'lucide-react'
-import { useState } from 'react'
+import { Loader2 } from 'lucide-react'
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -30,7 +28,6 @@ const queryClient = new QueryClient({
 function AppContent() {
   const { session, status } = useAuth()
   const { currentView, setCurrentView } = useAppStore()
-  const [seeding, setSeeding] = useState(false)
 
   // When session becomes authenticated, navigate to the correct dashboard
   useEffect(() => {
@@ -41,28 +38,6 @@ function AppContent() {
       }
     }
   }, [status, session, currentView, setCurrentView])
-
-  const handleSeed = async () => {
-    setSeeding(true)
-    try {
-      const res = await fetch('/api/seed', { method: 'POST' })
-      const data = await res.json()
-      if (!res.ok) {
-        throw new Error(data.error || 'Error al crear datos')
-      }
-      alert(
-        'Datos de demostración creados!\n\n' +
-        'Credenciales:\n' +
-        '• Admin: admin@empresa.com / password123\n' +
-        '• Usuario: maria@empresa.com / password123\n' +
-        '• Usuario: carlos@empresa.com / password123'
-      )
-    } catch (err: any) {
-      alert(err.message || 'Error al crear datos de demostración')
-    } finally {
-      setSeeding(false)
-    }
-  }
 
   // Loading state
   if (status === 'loading') {
@@ -81,23 +56,6 @@ function AppContent() {
     return (
       <div className="relative">
         {currentView === 'register' ? <RegisterForm /> : <LoginForm />}
-        {/* Seed button */}
-        <div className="fixed bottom-4 right-4 z-50">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleSeed}
-            disabled={seeding}
-            className="shadow-lg bg-white/90 backdrop-blur-sm text-xs"
-          >
-            {seeding ? (
-              <Loader2 className="mr-1.5 h-3 w-3 animate-spin" />
-            ) : (
-              <Database className="mr-1.5 h-3 w-3" />
-            )}
-            Cargar datos de demostración
-          </Button>
-        </div>
       </div>
     )
   }

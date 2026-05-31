@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { formatCLPForExcel } from '@/lib/format-currency'
 import * as XLSX from 'xlsx'
+import { LOGO_BASE64 } from '@/lib/logo'
 
 export async function GET(request: NextRequest) {
   try {
