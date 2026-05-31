@@ -3,7 +3,7 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
@@ -48,8 +48,8 @@ model ExpenseItem {
   montoRendir    Float
   category       String
   expenseDate    DateTime
-  imageBoletaUrl String
-  imageCompraUrl String
+  imageBoletaUrl String        @db.Text
+  imageCompraUrl String        @db.Text
   reportId       String
   report         ExpenseReport @relation(fields: [reportId], references: [id], onDelete: Cascade)
   createdAt      DateTime      @default(now())
