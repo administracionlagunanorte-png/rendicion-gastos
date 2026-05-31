@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { getAuthSession } from "@/lib/auth-helper"
 import { db } from "@/lib/db"
-import bcrypt from "bcryptjs"
 
 // GET /api/users - Listar usuarios (solo admin)
 export async function GET(request: NextRequest) {
@@ -23,6 +22,7 @@ export async function GET(request: NextRequest) {
 
     const searchParams = request.nextUrl.searchParams
     const search = searchParams.get("search") || undefined
+    const withBudget = searchParams.get("withBudget") === "true"
 
     const where: any = {}
     if (search) {
@@ -32,6 +32,65 @@ export async function GET(request: NextRequest) {
       ]
     }
 
+    if (withBudget) {
+      // Get users with budget info computed from approved reports
+      const users = await db.user.findMany({
+        where,
+        select: {
+          id: true,
+          email: true,
+          name: true,
+          role: true,
+          montoAsignado: true,
+          createdAt: true,
+          reports: {
+            where: { status: "APPROVED" },
+            select: {
+              totalAmount: true,
+              items: {
+                select: { montoRendir: true }
+              }
+            }
+          },
+          _count: {
+            select: { reports: true }
+          }
+        },
+        orderBy: { createdAt: "desc" },
+      })
+
+      // Compute budget data for each user
+      const usersWithBudget = users.map((user: any) => {
+        const montoAprobado = user.reports.reduce((sum: number, r: any) => sum + r.totalAmount, 0)
+        const montoRendido = user.reports.reduce(
+          (sum: number, r: any) => sum + r.items.reduce((s: number, i: any) => s + i.montoRendir, 0), 0
+        )
+        const montoRestante = user.montoAsignado - montoRendido
+
+        return {
+          id: user.id,
+          email: user.email,
+          name: user.name,
+          role: user.role,
+          montoAsignado: user.montoAsignado,
+          montoAprobado,
+          montoRendido,
+          montoRestante,
+          reportsCount: user._count.reports,
+          createdAt: user.createdAt,
+        }
+      })
+
+      const totalUsers = await db.user.count({ where })
+      const totalAdmins = await db.user.count({ where: { role: "ADMIN" } })
+
+      return NextResponse.json({
+        users: usersWithBudget,
+        totalUsers,
+        totalAdmins,
+      })
+    }
+
     const users = await db.user.findMany({
       where,
       select: {
@@ -39,6 +98,7 @@ export async function GET(request: NextRequest) {
         email: true,
         name: true,
         role: true,
+        montoAsignado: true,
         createdAt: true,
         _count: {
           select: { reports: true }
@@ -83,7 +143,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { email, name, password, role } = body
+    const { email, name, password, role, montoAsignado } = body
 
     // Validaciones
     if (!email || !email.trim()) {
@@ -132,6 +192,7 @@ export async function POST(request: NextRequest) {
     const validRole = role && ["USER", "ADMIN"].includes(role) ? role : "USER"
 
     // Hashear contraseña
+    const bcrypt = require("bcryptjs")
     const hashedPassword = await bcrypt.hash(password, 10)
 
     // Crear usuario
@@ -141,12 +202,14 @@ export async function POST(request: NextRequest) {
         name: name.trim(),
         password: hashedPassword,
         role: validRole,
+        montoAsignado: parseFloat(montoAsignado) || 0,
       },
       select: {
         id: true,
         email: true,
         name: true,
         role: true,
+        montoAsignado: true,
         createdAt: true,
       }
     })

@@ -201,6 +201,9 @@ export async function PATCH(
       )
     }
 
+    // Admin auto-aprobación: si el admin envía su propio reporte, se aprueba automáticamente
+    const isAdminOwnReport = existingReport.userId === userId && userRole === "ADMIN"
+
     // Validar transiciones de estado
     if (status === "SUBMITTED") {
       // Solo el dueño puede enviar
@@ -223,6 +226,24 @@ export async function PATCH(
           { error: "El reporte debe tener al menos un gasto para ser enviado" },
           { status: 400 }
         )
+      }
+      // Auto-aprobación para admin: cambiar estado a APPROVED directamente
+      if (isAdminOwnReport) {
+        const report = await db.expenseReport.update({
+          where: { id },
+          data: {
+            status: "APPROVED",
+            reviewedBy: userId,
+            reviewedAt: new Date(),
+          },
+          include: {
+            user: {
+              select: { id: true, name: true, email: true, role: true }
+            },
+            items: { orderBy: { createdAt: "asc" } }
+          }
+        })
+        return NextResponse.json(report)
       }
     }
 

@@ -25,6 +25,10 @@ import {
   Receipt,
   ImageIcon,
   Loader2,
+  PlusCircle,
+  Trash2,
+  Pencil,
+  Shield,
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -40,9 +44,9 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from '@/components/ui/dialog'
 import { useAppStore } from '@/lib/store'
+import { ExpenseItemDialog } from './expense-item-dialog'
 import { toast } from 'sonner'
 
 const statusConfig: Record<string, { label: string; color: string; icon: React.ReactNode; description: string }> = {
@@ -96,6 +100,10 @@ export function ReportDetail() {
   const [actionDialog, setActionDialog] = useState<string | null>(null)
   const [isActing, setIsActing] = useState(false)
   const [previewImage, setPreviewImage] = useState<{ url: string; title: string } | null>(null)
+  const [editingItem, setEditingItem] = useState<any | null>(null)
+  const [showItemDialog, setShowItemDialog] = useState(false)
+  const [deleteItemId, setDeleteItemId] = useState<string | null>(null)
+  const [isDeleting, setIsDeleting] = useState(false)
 
   const isAdmin = session?.user?.role === 'ADMIN'
   const userId = session?.user?.id
@@ -151,12 +159,38 @@ export function ReportDetail() {
         const data = await res.json()
         throw new Error(data.error || 'Error al enviar')
       }
-      toast.success('Rendición enviada para revisión')
+      // Admin auto-approval
+      if (isAdmin) {
+        toast.success('Rendición enviada y aprobada automáticamente (Admin)')
+      } else {
+        toast.success('Rendición enviada para revisión')
+      }
       queryClient.invalidateQueries({ queryKey: ['report', selectedReportId] })
       queryClient.invalidateQueries({ queryKey: ['reports'] })
       queryClient.invalidateQueries({ queryKey: ['stats'] })
     } catch (err: any) {
       toast.error(err.message || 'Error al enviar la rendición')
+    }
+  }
+
+  const handleDeleteItem = async () => {
+    if (!deleteItemId) return
+    setIsDeleting(true)
+    try {
+      const res = await fetch(`/api/items/${deleteItemId}`, { method: 'DELETE' })
+      if (!res.ok) {
+        const data = await res.json()
+        throw new Error(data.error || 'Error al eliminar gasto')
+      }
+      toast.success('Gasto eliminado correctamente')
+      queryClient.invalidateQueries({ queryKey: ['report', selectedReportId] })
+      queryClient.invalidateQueries({ queryKey: ['reports'] })
+      queryClient.invalidateQueries({ queryKey: ['stats'] })
+      setDeleteItemId(null)
+    } catch (err: any) {
+      toast.error(err.message || 'Error al eliminar el gasto')
+    } finally {
+      setIsDeleting(false)
     }
   }
 
@@ -198,12 +232,18 @@ export function ReportDetail() {
   }
 
   const status = statusConfig[report.status] || statusConfig.DRAFT
-  const canEdit = report.userId === userId && ['DRAFT', 'MODIFICATION_REQUESTED'].includes(report.status)
-  const canSubmit = report.userId === userId && ['DRAFT', 'MODIFICATION_REQUESTED'].includes(report.status) && report.items?.length > 0
-  const canReview = isAdmin && ['SUBMITTED', 'MODIFICATION_REQUESTED'].includes(report.status)
+  const canEdit = (report.userId === userId || isAdmin) && ['DRAFT', 'MODIFICATION_REQUESTED'].includes(report.status)
+  const canSubmit = (report.userId === userId || isAdmin) && ['DRAFT', 'MODIFICATION_REQUESTED'].includes(report.status) && report.items?.length > 0
+  const canReview = isAdmin && report.userId !== userId && ['SUBMITTED', 'MODIFICATION_REQUESTED'].includes(report.status)
+  const canAddItem = canEdit
 
   // Calculate total monto a rendir
   const totalMontoRendir = report.items?.reduce((sum: number, item: any) => sum + (item.montoRendir || 0), 0) || 0
+
+  const openEditDialog = (item?: any) => {
+    setEditingItem(item || null)
+    setShowItemDialog(true)
+  }
 
   return (
     <div className="space-y-6 max-w-3xl">
@@ -223,6 +263,40 @@ export function ReportDetail() {
         </Dialog>
       )}
 
+      {/* Delete Item Confirmation Dialog */}
+      <Dialog open={!!deleteItemId} onOpenChange={(open) => !open && setDeleteItemId(null)}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Eliminar Gasto</DialogTitle>
+            <DialogDescription>
+              ¿Está seguro de que desea eliminar este gasto? Esta acción no se puede deshacer.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setDeleteItemId(null)} disabled={isDeleting}>
+              Cancelar
+            </Button>
+            <Button variant="destructive" onClick={handleDeleteItem} disabled={isDeleting}>
+              {isDeleting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+              Eliminar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Expense Item Dialog */}
+      <ExpenseItemDialog
+        open={showItemDialog}
+        onOpenChange={setShowItemDialog}
+        item={editingItem}
+        reportId={selectedReportId!}
+        onSave={() => {
+          queryClient.invalidateQueries({ queryKey: ['report', selectedReportId] })
+          queryClient.invalidateQueries({ queryKey: ['reports'] })
+          queryClient.invalidateQueries({ queryKey: ['stats'] })
+        }}
+      />
+
       {/* Header */}
       <div className="flex items-start gap-3">
         <Button
@@ -236,12 +310,26 @@ export function ReportDetail() {
         <div className="flex-1 min-w-0">
           <div className="flex items-start justify-between gap-2">
             <h2 className="text-xl font-bold truncate">{report.title}</h2>
-            <Badge variant="outline" className={`shrink-0 text-xs ${status.color}`}>
-              {status.icon}
-              <span className="ml-1">{status.label}</span>
-            </Badge>
+            <div className="flex items-center gap-2 shrink-0">
+              {isAdmin && report.userId === userId && (
+                <Badge variant="outline" className="text-[10px] bg-blue-50 text-blue-700 border-blue-200">
+                  <Shield className="h-2.5 w-2.5 mr-0.5" />
+                  Auto-aprobación
+                </Badge>
+              )}
+              <Badge variant="outline" className={`shrink-0 text-xs ${status.color}`}>
+                {status.icon}
+                <span className="ml-1">{status.label}</span>
+              </Badge>
+            </div>
           </div>
           <p className="text-sm text-muted-foreground mt-1">{status.description}</p>
+          {isAdmin && report.userId === userId && ['DRAFT', 'MODIFICATION_REQUESTED'].includes(report.status) && (
+            <p className="text-xs text-blue-600 mt-1 flex items-center gap-1">
+              <Shield className="h-3 w-3" />
+              Como administrador, su rendición se aprobará automáticamente al enviarla
+            </p>
+          )}
         </div>
       </div>
 
@@ -263,13 +351,13 @@ export function ReportDetail() {
             <div className="flex items-center gap-2">
               <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
               <span className="text-muted-foreground">Creado:</span>
-              <span className="font-medium">{new Date(report.createdAt).toLocaleDateString('es-ES')}</span>
+              <span className="font-medium">{new Date(report.createdAt).toLocaleDateString('es-CL')}</span>
             </div>
             {report.reviewedAt && (
               <div className="flex items-center gap-2">
                 <Clock className="h-3.5 w-3.5 text-muted-foreground" />
                 <span className="text-muted-foreground">Revisado:</span>
-                <span className="font-medium">{new Date(report.reviewedAt).toLocaleDateString('es-ES')}</span>
+                <span className="font-medium">{new Date(report.reviewedAt).toLocaleDateString('es-CL')}</span>
               </div>
             )}
           </div>
@@ -293,9 +381,23 @@ export function ReportDetail() {
               <DollarSign className="h-4 w-4 text-emerald-600" />
               Detalle de Gastos
             </CardTitle>
-            <Badge className="bg-emerald-600 text-white border-0">
-              {report.items?.length || 0} {report.items?.length === 1 ? 'gasto' : 'gastos'}
-            </Badge>
+            <div className="flex items-center gap-2">
+              <Badge className="bg-emerald-600 text-white border-0">
+                {report.items?.length || 0} {report.items?.length === 1 ? 'gasto' : 'gastos'}
+              </Badge>
+              {canAddItem && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => openEditDialog()}
+                  className="text-emerald-600 border-emerald-200 hover:bg-emerald-50 text-xs"
+                >
+                  <PlusCircle className="h-3.5 w-3.5 mr-1" />
+                  Agregar
+                </Button>
+              )}
+            </div>
           </div>
         </CardHeader>
         <CardContent>
@@ -303,6 +405,15 @@ export function ReportDetail() {
             <div className="text-center py-6">
               <DollarSign className="h-10 w-10 mx-auto text-muted-foreground/30 mb-2" />
               <p className="text-sm text-muted-foreground">No hay gastos registrados</p>
+              {canAddItem && (
+                <Button
+                  variant="link"
+                  className="text-emerald-600 mt-1"
+                  onClick={() => openEditDialog()}
+                >
+                  Agregar primer gasto
+                </Button>
+              )}
             </div>
           ) : (
             <div className="space-y-3">
@@ -328,7 +439,7 @@ export function ReportDetail() {
                         </span>
                         <span className="text-xs text-muted-foreground flex items-center gap-1">
                           <Calendar className="h-3 w-3" />
-                          {new Date(item.expenseDate).toLocaleDateString('es-ES')}
+                          {new Date(item.expenseDate).toLocaleDateString('es-CL')}
                         </span>
                       </div>
                       <div className="flex flex-wrap gap-2 mt-2">
@@ -340,6 +451,28 @@ export function ReportDetail() {
                         </span>
                       </div>
                     </div>
+
+                    {/* Edit & Delete buttons */}
+                    {canEdit && (
+                      <div className="flex items-center gap-1 shrink-0">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7 text-muted-foreground hover:text-emerald-600 hover:bg-emerald-50"
+                          onClick={() => openEditDialog(item)}
+                        >
+                          <Pencil className="h-3.5 w-3.5" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7 text-muted-foreground hover:text-red-600 hover:bg-red-50"
+                          onClick={() => setDeleteItemId(item.id)}
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
+                    )}
                   </div>
 
                   {/* Photos */}
@@ -405,7 +538,7 @@ export function ReportDetail() {
         </CardContent>
       </Card>
 
-      {/* Admin Actions */}
+      {/* Admin Actions (for other users' reports) */}
       {canReview && (
         <Card className="shadow-sm border-amber-200 bg-amber-50/30">
           <CardHeader className="pb-3">
@@ -526,7 +659,7 @@ export function ReportDetail() {
         </Card>
       )}
 
-      {/* User Actions */}
+      {/* User & Admin Actions */}
       {(canEdit || canSubmit) && (
         <Card className="shadow-sm">
           <CardContent className="p-4">
@@ -538,7 +671,7 @@ export function ReportDetail() {
                   onClick={() => setCurrentView('edit-report')}
                 >
                   <FileEdit className="mr-2 h-4 w-4" />
-                  Editar Rendición
+                  Editar Rendición Completa
                 </Button>
               )}
               {canSubmit && (
@@ -547,7 +680,7 @@ export function ReportDetail() {
                   onClick={handleSubmitForReview}
                 >
                   <Send className="mr-2 h-4 w-4" />
-                  Enviar para Revisión
+                  {isAdmin && report.userId === userId ? 'Enviar y Aprobar' : 'Enviar para Revisión'}
                 </Button>
               )}
             </div>

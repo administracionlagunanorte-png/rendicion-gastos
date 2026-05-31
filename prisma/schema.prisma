@@ -8,16 +8,17 @@ datasource db {
 }
 
 model User {
-  id            String           @id @default(cuid())
-  email         String           @unique
-  name          String
-  password      String
-  role          String           @default("USER")
-  avatar        String?
-  createdAt     DateTime         @default(now())
-  updatedAt     DateTime         @updatedAt
-  reports       ExpenseReport[]
-  notifications Notification[]
+  id             String           @id @default(cuid())
+  email          String           @unique
+  name           String
+  password       String
+  role           String           @default("USER")
+  avatar         String?
+  montoAsignado  Float            @default(0)
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+  reports        ExpenseReport[]
+  notifications  Notification[]
 }
 
 model ExpenseReport {

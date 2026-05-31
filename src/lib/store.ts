@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 
-type View = 'login' | 'register' | 'dashboard' | 'create-report' | 'edit-report' | 'report-detail' | 'admin-dashboard' | 'notifications'
+type View = 'login' | 'register' | 'dashboard' | 'create-report' | 'edit-report' | 'report-detail' | 'admin-dashboard' | 'notifications' | 'users-panel'
 
 interface AppState {
   currentView: View

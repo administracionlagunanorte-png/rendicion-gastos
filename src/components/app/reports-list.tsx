@@ -77,15 +77,13 @@ export function ReportsList() {
             {data?.pagination?.total || 0} rendiciones encontradas
           </p>
         </div>
-        {!isAdmin && (
-          <Button
-            onClick={() => setCurrentView('create-report')}
-            className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm"
-          >
-            <FileText className="mr-2 h-4 w-4" />
-            Nueva
-          </Button>
-        )}
+        <Button
+          onClick={() => setCurrentView('create-report')}
+          className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm"
+        >
+          <FileText className="mr-2 h-4 w-4" />
+          Nueva
+        </Button>
       </div>
 
       {/* Filters */}

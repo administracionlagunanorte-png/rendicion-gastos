@@ -13,6 +13,7 @@ import {
   Receipt,
   Shield,
   ChevronRight,
+  Users,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -183,9 +184,21 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     },
     {
       id: 'all-reports',
-      label: 'Todas las Rendiciones',
+      label: 'Rendiciones',
       icon: <FileText className="h-4 w-4" />,
       view: 'dashboard',
+    },
+    {
+      id: 'create-report',
+      label: 'Nueva Rendición',
+      icon: <PlusCircle className="h-4 w-4" />,
+      view: 'create-report',
+    },
+    {
+      id: 'users-panel',
+      label: 'Usuarios y Montos',
+      icon: <Users className="h-4 w-4" />,
+      view: 'users-panel',
     },
     {
       id: 'notifications',

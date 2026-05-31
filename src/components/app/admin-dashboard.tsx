@@ -15,6 +15,9 @@ import {
   FileEdit,
   TrendingUp,
   Eye,
+  PlusCircle,
+  Wallet,
+  User,
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -55,6 +58,16 @@ export function AdminDashboard() {
     },
   })
 
+  // Fetch users with budget data for the control panel
+  const { data: budgetData, isLoading: budgetLoading } = useQuery({
+    queryKey: ['admin-budget'],
+    queryFn: async () => {
+      const res = await fetch('/api/users?withBudget=true')
+      if (!res.ok) throw new Error('Error')
+      return res.json()
+    },
+  })
+
   const handleExportAll = async () => {
     try {
       const params = new URLSearchParams()
@@ -78,6 +91,12 @@ export function AdminDashboard() {
       toast.error('Error al exportar los datos')
     }
   }
+
+  // Compute budget totals
+  const totalAsignado = budgetData?.users?.reduce((sum: number, u: any) => sum + (u.montoAsignado || 0), 0) || 0
+  const totalAprobado = budgetData?.users?.reduce((sum: number, u: any) => sum + (u.montoAprobado || 0), 0) || 0
+  const totalRendido = budgetData?.users?.reduce((sum: number, u: any) => sum + (u.montoRendido || 0), 0) || 0
+  const totalRestante = budgetData?.users?.reduce((sum: number, u: any) => sum + (u.montoRestante || 0), 0) || 0
 
   const statCards = [
     {
@@ -132,14 +151,19 @@ export function AdminDashboard() {
           <h2 className="text-2xl font-bold">Panel de Administración</h2>
           <p className="text-muted-foreground mt-1">Gestiona y revisa todas las rendiciones de gastos</p>
         </div>
-        <Button
-          onClick={handleExportAll}
-          variant="outline"
-          className="shadow-sm"
-        >
-          <Download className="mr-2 h-4 w-4" />
-          Exportar Todo
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            onClick={() => setCurrentView('create-report')}
+            className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm"
+          >
+            <PlusCircle className="mr-2 h-4 w-4" />
+            Nueva Rendición
+          </Button>
+          <Button onClick={handleExportAll} variant="outline" className="shadow-sm">
+            <Download className="mr-2 h-4 w-4" />
+            Exportar Todo
+          </Button>
+        </div>
       </div>
 
       {/* Stats Cards */}
@@ -175,48 +199,90 @@ export function AdminDashboard() {
         ))}
       </div>
 
-      {/* Filter Bar */}
-      <Card className="shadow-sm">
-        <CardContent className="p-4">
-          <div className="flex flex-wrap items-end gap-3">
-            <div className="space-y-1 min-w-[140px]">
-              <Label className="text-xs">Estado</Label>
-              <Select value={filters.status || 'all'} onValueChange={(v) => setFilters({ status: v === 'all' ? '' : v })}>
-                <SelectTrigger className="h-9 text-xs">
-                  <SelectValue placeholder="Todos" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todos</SelectItem>
-                  <SelectItem value="DRAFT">Borrador</SelectItem>
-                  <SelectItem value="SUBMITTED">Enviado</SelectItem>
-                  <SelectItem value="APPROVED">Aprobado</SelectItem>
-                  <SelectItem value="REJECTED">Rechazado</SelectItem>
-                  <SelectItem value="MODIFICATION_REQUESTED">Modificación</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-1">
-              <Label className="text-xs">Desde</Label>
-              <Input
-                type="date"
-                className="h-9 text-xs w-[140px]"
-                value={filters.dateFrom}
-                onChange={(e) => setFilters({ dateFrom: e.target.value })}
-              />
-            </div>
-            <div className="space-y-1">
-              <Label className="text-xs">Hasta</Label>
-              <Input
-                type="date"
-                className="h-9 text-xs w-[140px]"
-                value={filters.dateTo}
-                onChange={(e) => setFilters({ dateTo: e.target.value })}
-              />
-            </div>
-            <Button variant="ghost" size="sm" onClick={resetFilters} className="text-xs">
-              Limpiar filtros
+      {/* Budget Control Summary */}
+      <Card className="shadow-sm border-blue-200">
+        <CardHeader className="pb-3">
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-base flex items-center gap-2">
+              <Wallet className="h-4 w-4 text-blue-600" />
+              Control de Presupuestos
+            </CardTitle>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-blue-600 hover:text-blue-700 text-xs"
+              onClick={() => setCurrentView('users-panel')}
+            >
+              Ver detalle <TrendingUp className="ml-1 h-3 w-3" />
             </Button>
           </div>
+        </CardHeader>
+        <CardContent>
+          {budgetLoading ? (
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+              {[1, 2, 3, 4].map((i) => (
+                <Skeleton key={i} className="h-16 w-full" />
+              ))}
+            </div>
+          ) : (
+            <>
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+                <div className="p-3 bg-blue-50 rounded-lg">
+                  <span className="text-xs text-blue-600 font-medium">Total Asignado</span>
+                  <p className="text-lg font-bold text-blue-700">{formatCLP(totalAsignado)}</p>
+                </div>
+                <div className="p-3 bg-emerald-50 rounded-lg">
+                  <span className="text-xs text-emerald-600 font-medium">Total Aprobado</span>
+                  <p className="text-lg font-bold text-emerald-700">{formatCLP(totalAprobado)}</p>
+                </div>
+                <div className="p-3 bg-amber-50 rounded-lg">
+                  <span className="text-xs text-amber-600 font-medium">Total Rendido</span>
+                  <p className="text-lg font-bold text-amber-700">{formatCLP(totalRendido)}</p>
+                </div>
+                <div className={`p-3 rounded-lg ${totalRestante >= 0 ? 'bg-emerald-50' : 'bg-red-50'}`}>
+                  <span className={`text-xs font-medium ${totalRestante >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>Total Restante</span>
+                  <p className={`text-lg font-bold ${totalRestante >= 0 ? 'text-emerald-700' : 'text-red-700'}`}>{formatCLP(totalRestante)}</p>
+                </div>
+              </div>
+
+              {/* Quick user budget list */}
+              {budgetData?.users?.length > 0 && (
+                <div className="space-y-2">
+                  <p className="text-xs font-medium text-muted-foreground">Resumen por usuario:</p>
+                  <div className="space-y-1.5 max-h-48 overflow-y-auto">
+                    {budgetData.users.map((user: any) => {
+                      const restante = user.montoRestante || 0
+                      const isOver = restante < 0
+                      const pct = user.montoAsignado > 0 ? Math.round((user.montoRendido / user.montoAsignado) * 100) : 0
+                      return (
+                        <div key={user.id} className="flex items-center gap-3 py-1.5 px-2 rounded hover:bg-muted/30 text-xs">
+                          <div className="flex items-center gap-2 min-w-[140px]">
+                            <User className="h-3 w-3 text-muted-foreground" />
+                            <span className="font-medium truncate">{user.name}</span>
+                          </div>
+                          <div className="flex-1">
+                            <div className="w-full bg-muted rounded-full h-1.5">
+                              <div
+                                className={`h-1.5 rounded-full ${isOver ? 'bg-red-500' : pct > 80 ? 'bg-amber-500' : 'bg-emerald-500'}`}
+                                style={{ width: `${Math.min(100, pct)}%` }}
+                              />
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-3 shrink-0 text-[11px]">
+                            <span className="text-blue-600">{formatCLP(user.montoAsignado || 0)}</span>
+                            <span className="text-amber-600">{formatCLP(user.montoRendido || 0)}</span>
+                            <span className={`font-medium ${isOver ? 'text-red-600' : 'text-emerald-600'}`}>
+                              {formatCLP(restante)}
+                            </span>
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+              )}
+            </>
+          )}
         </CardContent>
       </Card>
 
@@ -313,7 +379,7 @@ export function AdminDashboard() {
           ) : (
             <div className="space-y-3">
               {stats?.recentReports?.map((report: any) => {
-                const status = statusConfig[report.status] || statusConfig.DRAFT
+                const st = statusConfig[report.status] || statusConfig.DRAFT
                 return (
                   <div
                     key={report.id}
@@ -326,12 +392,12 @@ export function AdminDashboard() {
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium truncate">{report.title}</p>
                       <p className="text-xs text-muted-foreground">
-                        {report.user?.name} · {new Date(report.createdAt).toLocaleDateString('es-ES')}
+                        {report.user?.name} · {new Date(report.createdAt).toLocaleDateString('es-CL')}
                       </p>
                     </div>
-                    <Badge variant="outline" className={`text-[10px] ml-2 shrink-0 ${status.color}`}>
-                      {status.icon}
-                      <span className="ml-1">{status.label}</span>
+                    <Badge variant="outline" className={`text-[10px] ml-2 shrink-0 ${st.color}`}>
+                      {st.icon}
+                      <span className="ml-1">{st.label}</span>
                     </Badge>
                   </div>
                 )
