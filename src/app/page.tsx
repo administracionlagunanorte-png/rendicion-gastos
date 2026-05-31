@@ -6,7 +6,6 @@ import { Toaster } from 'sonner'
 import { AuthProvider, useAuth } from '@/lib/auth-context'
 import { useAppStore } from '@/lib/store'
 import { LoginForm } from '@/components/app/login-form'
-import { RegisterForm } from '@/components/app/register-form'
 import { AppShell } from '@/components/app/app-shell'
 import { AdminDashboard } from '@/components/app/admin-dashboard'
 import { ReportForm } from '@/components/app/report-form'
@@ -33,7 +32,7 @@ function AppContent() {
   useEffect(() => {
     if (status === 'authenticated' && session?.user) {
       const role = session.user.role
-      if (currentView === 'login' || currentView === 'register') {
+      if (currentView === 'login') {
         setCurrentView(role === 'ADMIN' ? 'admin-dashboard' : 'dashboard')
       }
     }
@@ -51,13 +50,9 @@ function AppContent() {
     )
   }
 
-  // Not authenticated - show login/register
+  // Not authenticated - show login only
   if (status === 'unauthenticated') {
-    return (
-      <div className="relative">
-        {currentView === 'register' ? <RegisterForm /> : <LoginForm />}
-      </div>
-    )
+    return <LoginForm />
   }
 
   // Authenticated - render appropriate view

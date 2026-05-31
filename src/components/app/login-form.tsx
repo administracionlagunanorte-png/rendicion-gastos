@@ -8,14 +8,12 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
-import { useAppStore } from '@/lib/store'
 
 export function LoginForm() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [isLoading, setIsLoading] = useState(false)
-  const { setCurrentView } = useAppStore()
   const { login, status } = useAuth()
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -142,17 +140,7 @@ export function LoginForm() {
                   </>
                 )}
               </Button>
-              <p className="text-sm text-muted-foreground text-center">
-                ¿No tiene una cuenta?{' '}
-                <button
-                  type="button"
-                  onClick={() => setCurrentView('register')}
-                  className="text-emerald-600 hover:text-emerald-700 font-medium hover:underline"
-                  disabled={isLoading}
-                >
-                  Regístrese aquí
-                </button>
-              </p>
+
             </CardFooter>
           </form>
         </Card>

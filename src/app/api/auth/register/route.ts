@@ -1,9 +1,27 @@
 import { NextRequest, NextResponse } from "next/server"
 import bcrypt from "bcryptjs"
+import { getAuthSession } from "@/lib/auth-helper"
 import { db } from "@/lib/db"
 
+// POST /api/auth/register - Crear nuevo usuario (SOLO ADMIN)
 export async function POST(request: NextRequest) {
   try {
+    // Verificar que sea un administrador autenticado
+    const session = await getAuthSession(request)
+    if (!session) {
+      return NextResponse.json(
+        { error: "No autorizado. Inicie sesión para continuar." },
+        { status: 401 }
+      )
+    }
+
+    if (session.user.role !== "ADMIN") {
+      return NextResponse.json(
+        { error: "No tiene permisos para crear usuarios. Solo el administrador puede registrar nuevos usuarios." },
+        { status: 403 }
+      )
+    }
+
     const body = await request.json()
     const { email, name, password, role } = body
 
