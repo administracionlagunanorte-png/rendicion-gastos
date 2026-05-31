@@ -62,14 +62,6 @@ export async function PUT(
       )
     }
 
-    // Validar monto si se proporciona
-    if (amount !== undefined && amount <= 0) {
-      return NextResponse.json(
-        { error: "El monto debe ser mayor a 0" },
-        { status: 400 }
-      )
-    }
-
     // Validar monto a rendir si se proporciona
     if (montoRendir !== undefined && montoRendir <= 0) {
       return NextResponse.json(
@@ -78,16 +70,21 @@ export async function PUT(
       )
     }
 
+    // If montoRendir is provided, set amount = montoRendir
+    const montoRendirValue = montoRendir !== undefined ? parseFloat(montoRendir) : existingItem.montoRendir
+
     // Calcular diferencia de monto para actualizar total del reporte
-    const oldAmount = existingItem.amount
-    const newAmount = amount !== undefined ? parseFloat(amount) : oldAmount
+    const oldMontoRendir = existingItem.montoRendir
+    const newMontoRendir = montoRendirValue
 
     // Actualizar item
     const updateData: any = {}
     if (description !== undefined) updateData.description = description.trim()
-    if (amount !== undefined) updateData.amount = parseFloat(amount)
+    if (montoRendir !== undefined) {
+      updateData.montoRendir = montoRendirValue
+      updateData.amount = montoRendirValue // Set amount = montoRendir
+    }
     if (numeroBoleta !== undefined) updateData.numeroBoleta = numeroBoleta.trim()
-    if (montoRendir !== undefined) updateData.montoRendir = parseFloat(montoRendir)
     if (category !== undefined) updateData.category = category.trim()
     if (expenseDate !== undefined) updateData.expenseDate = new Date(expenseDate)
     if (imageBoletaUrl !== undefined) updateData.imageBoletaUrl = imageBoletaUrl
@@ -98,12 +95,12 @@ export async function PUT(
       data: updateData,
     })
 
-    // Actualizar monto total del reporte
-    if (newAmount !== oldAmount) {
+    // Actualizar monto total del reporte (using montoRendir)
+    if (newMontoRendir !== oldMontoRendir) {
       await db.expenseReport.update({
         where: { id: existingItem.reportId },
         data: {
-          totalAmount: existingItem.report.totalAmount - oldAmount + newAmount,
+          totalAmount: existingItem.report.totalAmount - oldMontoRendir + newMontoRendir,
         },
       })
     }
@@ -172,11 +169,11 @@ export async function DELETE(
       where: { id },
     })
 
-    // Actualizar monto total del reporte
+    // Actualizar monto total del reporte (using montoRendir)
     await db.expenseReport.update({
       where: { id: existingItem.reportId },
       data: {
-        totalAmount: existingItem.report.totalAmount - existingItem.amount,
+        totalAmount: existingItem.report.totalAmount - existingItem.montoRendir,
       },
     })
 

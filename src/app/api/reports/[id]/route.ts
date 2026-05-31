@@ -238,6 +238,7 @@ export async function PATCH(
             status: "APPROVED",
             reviewedBy: userId,
             reviewedAt: new Date(),
+            submittedAt: new Date(),
           },
           include: {
             user: {
@@ -272,6 +273,19 @@ export async function PATCH(
       status,
       reviewedBy: userId,
       reviewedAt: new Date()
+    }
+
+    // Set submittedAt when status is SUBMITTED
+    if (status === "SUBMITTED") {
+      updateData.submittedAt = new Date()
+    }
+
+    // Set submittedAt when auto-approving (admin reviewing)
+    if (["APPROVED", "REJECTED", "MODIFICATION_REQUESTED"].includes(status)) {
+      // If the report hasn't been submitted yet, set submittedAt too
+      if (!existingReport.submittedAt) {
+        updateData.submittedAt = new Date()
+      }
     }
 
     if (reviewNote) {

@@ -36,13 +36,6 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    if (!amount || amount <= 0) {
-      return NextResponse.json(
-        { error: "El monto debe ser mayor a 0" },
-        { status: 400 }
-      )
-    }
-
     if (!numeroBoleta || numeroBoleta.trim() === "") {
       return NextResponse.json(
         { error: "El número de boleta es requerido" },
@@ -123,13 +116,16 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Set amount = montoRendir for backward compatibility
+    const montoRendirValue = parseFloat(montoRendir)
+
     // Crear item
     const item = await db.expenseItem.create({
       data: {
         description: description.trim(),
-        amount: parseFloat(amount),
+        amount: montoRendirValue, // amount = montoRendir
         numeroBoleta: numeroBoleta.trim(),
-        montoRendir: parseFloat(montoRendir),
+        montoRendir: montoRendirValue,
         category: category.trim(),
         expenseDate: new Date(expenseDate),
         imageBoletaUrl,
@@ -138,8 +134,8 @@ export async function POST(request: NextRequest) {
       },
     })
 
-    // Actualizar monto total del reporte
-    const newTotal = report.totalAmount + item.amount
+    // Actualizar monto total del reporte (using montoRendir)
+    const newTotal = report.totalAmount + montoRendirValue
     await db.expenseReport.update({
       where: { id: reportId },
       data: { totalAmount: newTotal },

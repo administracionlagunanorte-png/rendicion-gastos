@@ -28,20 +28,15 @@ import { useAppStore } from '@/lib/store'
 import { ImageUpload } from './image-upload'
 import { toast } from 'sonner'
 
-const CATEGORIES = [
-  { value: 'Alimentación', label: 'Alimentación' },
-  { value: 'Transporte', label: 'Transporte' },
-  { value: 'Alojamiento', label: 'Alojamiento' },
-  { value: 'Entretenimiento', label: 'Entretenimiento' },
-  { value: 'Oficina', label: 'Oficina' },
-  { value: 'Capacitación', label: 'Capacitación' },
-  { value: 'Otro', label: 'Otro' },
-]
+interface Category {
+  id: string
+  name: string
+  icon: string
+}
 
 interface ExpenseItem {
   id?: string
   description: string
-  amount: string
   numeroBoleta: string
   montoRendir: string
   category: string
@@ -64,6 +59,19 @@ export function ReportForm() {
   const [items, setItems] = useState<ExpenseItem[]>([])
   const [isSaving, setIsSaving] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [categories, setCategories] = useState<Category[]>([])
+
+  // Fetch categories
+  useEffect(() => {
+    fetch('/api/categories')
+      .then((res) => res.json())
+      .then((data) => {
+        if (Array.isArray(data)) {
+          setCategories(data)
+        }
+      })
+      .catch(() => {})
+  }, [])
 
   // Load existing report if editing
   const [reportStatus, setReportStatus] = useState<string>('')
@@ -86,7 +94,6 @@ export function ReportForm() {
         report.items.map((item: any) => ({
           id: item.id,
           description: item.description,
-          amount: item.amount.toString(),
           numeroBoleta: item.numeroBoleta || '',
           montoRendir: item.montoRendir?.toString() || '',
           category: item.category,
@@ -99,23 +106,19 @@ export function ReportForm() {
     }
   }, [report])
 
-  const totalAmount = items
-    .filter((i) => !i.isDeleted)
-    .reduce((sum, item) => sum + (parseFloat(item.amount) || 0), 0)
-
   const totalMontoRendir = items
     .filter((i) => !i.isDeleted)
     .reduce((sum, item) => sum + (parseFloat(item.montoRendir) || 0), 0)
 
   const addItem = () => {
+    const defaultCategory = categories.length > 0 ? categories[0].name : ''
     setItems([
       ...items,
       {
         description: '',
-        amount: '',
         numeroBoleta: '',
         montoRendir: '',
-        category: 'Alimentación',
+        category: defaultCategory,
         expenseDate: new Date().toISOString().split('T')[0],
         imageBoletaUrl: null,
         imageCompraUrl: null,
@@ -146,9 +149,8 @@ export function ReportForm() {
       const item = items[i]
       if (item.isDeleted) continue
       if (!item.description.trim()) return `El gasto #${i + 1} debe tener una descripción`
-      if (!item.amount || parseFloat(item.amount) <= 0) return `El gasto #${i + 1} debe tener un monto válido`
-      if (!item.numeroBoleta.trim()) return `El gasto #${i + 1} debe tener un número de boleta`
       if (!item.montoRendir || parseFloat(item.montoRendir) <= 0) return `El gasto #${i + 1} debe tener un monto a rendir válido`
+      if (!item.numeroBoleta.trim()) return `El gasto #${i + 1} debe tener un número de boleta`
       if (!item.category) return `El gasto #${i + 1} debe tener una categoría`
       if (!item.expenseDate) return `El gasto #${i + 1} debe tener una fecha`
       if (!item.imageBoletaUrl) return `El gasto #${i + 1} debe tener la foto de la boleta`
@@ -211,14 +213,15 @@ export function ReportForm() {
       // Create new items
       const newItems = activeItems.filter((i) => i.isNew || !i.id)
       for (const item of newItems) {
+        const montoRendirValue = parseFloat(item.montoRendir)
         const res = await fetch('/api/items', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             description: item.description.trim(),
-            amount: parseFloat(item.amount),
+            amount: montoRendirValue, // Set amount = montoRendir
             numeroBoleta: item.numeroBoleta.trim(),
-            montoRendir: parseFloat(item.montoRendir),
+            montoRendir: montoRendirValue,
             category: item.category,
             expenseDate: item.expenseDate,
             imageBoletaUrl: item.imageBoletaUrl,
@@ -235,14 +238,15 @@ export function ReportForm() {
       // Update existing items
       const existingItems = activeItems.filter((i) => i.id && !i.isNew)
       for (const item of existingItems) {
+        const montoRendirValue = parseFloat(item.montoRendir)
         const res = await fetch(`/api/items/${item.id}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             description: item.description.trim(),
-            amount: parseFloat(item.amount),
+            amount: montoRendirValue, // Set amount = montoRendir
             numeroBoleta: item.numeroBoleta.trim(),
-            montoRendir: parseFloat(item.montoRendir),
+            montoRendir: montoRendirValue,
             category: item.category,
             expenseDate: item.expenseDate,
             imageBoletaUrl: item.imageBoletaUrl,
@@ -428,6 +432,7 @@ export function ReportForm() {
                         </Button>
                       </div>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        {/* Descripción */}
                         <div className="space-y-1 sm:col-span-2">
                           <Label className="text-xs">Descripción *</Label>
                           <Input
@@ -436,17 +441,18 @@ export function ReportForm() {
                             onChange={(e) => updateItem(index, 'description', e.target.value)}
                           />
                         </div>
+                        {/* Monto a Rendir + N° Boleta */}
                         <div className="space-y-1">
-                          <Label className="text-xs">Monto *</Label>
+                          <Label className="text-xs">Monto a Rendir *</Label>
                           <div className="relative">
                             <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
                             <Input
                               type="number"
-                              step="0.01"
+                              step="1"
                               min="0"
-                              placeholder="0.00"
-                              value={item.amount}
-                              onChange={(e) => updateItem(index, 'amount', e.target.value)}
+                              placeholder="0"
+                              value={item.montoRendir}
+                              onChange={(e) => updateItem(index, 'montoRendir', e.target.value)}
                               className="pl-9"
                             />
                           </div>
@@ -454,7 +460,7 @@ export function ReportForm() {
                         <div className="space-y-1">
                           <Label className="text-xs flex items-center gap-1">
                             <Receipt className="h-3 w-3" />
-                            Número de Boleta *
+                            N° Boleta *
                           </Label>
                           <Input
                             placeholder="Ej: 12345"
@@ -462,21 +468,7 @@ export function ReportForm() {
                             onChange={(e) => updateItem(index, 'numeroBoleta', e.target.value)}
                           />
                         </div>
-                        <div className="space-y-1">
-                          <Label className="text-xs">Monto a Rendir *</Label>
-                          <div className="relative">
-                            <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-                            <Input
-                              type="number"
-                              step="0.01"
-                              min="0"
-                              placeholder="0.00"
-                              value={item.montoRendir}
-                              onChange={(e) => updateItem(index, 'montoRendir', e.target.value)}
-                              className="pl-9"
-                            />
-                          </div>
-                        </div>
+                        {/* Categoría + Fecha */}
                         <div className="space-y-1">
                           <Label className="text-xs">Categoría *</Label>
                           <Select
@@ -487,9 +479,9 @@ export function ReportForm() {
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
-                              {CATEGORIES.map((cat) => (
-                                <SelectItem key={cat.value} value={cat.value}>
-                                  {cat.label}
+                              {categories.map((cat) => (
+                                <SelectItem key={cat.id} value={cat.name}>
+                                  {cat.icon} {cat.name}
                                 </SelectItem>
                               ))}
                             </SelectContent>
@@ -540,14 +532,8 @@ export function ReportForm() {
               <Separator className="my-4" />
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium">Total Montos</span>
+                  <span className="text-sm font-semibold">Total a Rendir</span>
                   <span className="text-xl font-bold text-emerald-700">
-                    {formatCLP(totalAmount)}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium">Total a Rendir</span>
-                  <span className="text-xl font-bold text-blue-700">
                     {formatCLP(totalMontoRendir)}
                   </span>
                 </div>

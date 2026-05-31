@@ -18,15 +18,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Loader2, DollarSign, Receipt } from 'lucide-react'
 import { toast } from 'sonner'
 
-const CATEGORIES = [
-  { value: 'Alimentación', label: 'Alimentación' },
-  { value: 'Transporte', label: 'Transporte' },
-  { value: 'Alojamiento', label: 'Alojamiento' },
-  { value: 'Entretenimiento', label: 'Entretenimiento' },
-  { value: 'Oficina', label: 'Oficina' },
-  { value: 'Capacitación', label: 'Capacitación' },
-  { value: 'Otro', label: 'Otro' },
-]
+interface Category {
+  id: string
+  name: string
+  icon: string
+}
 
 interface ExpenseItemData {
   id?: string
@@ -54,12 +50,32 @@ export function ExpenseItemDialog({ open, onOpenChange, item, reportId, onSave }
     amount: '',
     numeroBoleta: '',
     montoRendir: '',
-    category: 'Alimentación',
+    category: '',
     expenseDate: new Date().toISOString().split('T')[0],
     imageBoletaUrl: null,
     imageCompraUrl: null,
   })
   const [isSaving, setIsSaving] = useState(false)
+  const [categories, setCategories] = useState<Category[]>([])
+
+  // Fetch categories
+  useEffect(() => {
+    fetch('/api/categories')
+      .then((res) => res.json())
+      .then((data) => {
+        if (Array.isArray(data)) {
+          setCategories(data)
+        }
+      })
+      .catch(() => {})
+  }, [])
+
+  // Set default category when categories load
+  useEffect(() => {
+    if (categories.length > 0 && !form.category) {
+      setForm((prev) => ({ ...prev, category: categories[0].name }))
+    }
+  }, [categories, form.category])
 
   useEffect(() => {
     if (item) {
@@ -68,7 +84,7 @@ export function ExpenseItemDialog({ open, onOpenChange, item, reportId, onSave }
         amount: item.amount || '',
         numeroBoleta: item.numeroBoleta || '',
         montoRendir: item.montoRendir || '',
-        category: item.category || 'Alimentación',
+        category: item.category || (categories.length > 0 ? categories[0].name : ''),
         expenseDate: item.expenseDate || new Date().toISOString().split('T')[0],
         imageBoletaUrl: item.imageBoletaUrl || null,
         imageCompraUrl: item.imageCompraUrl || null,
@@ -79,13 +95,13 @@ export function ExpenseItemDialog({ open, onOpenChange, item, reportId, onSave }
         amount: '',
         numeroBoleta: '',
         montoRendir: '',
-        category: 'Alimentación',
+        category: categories.length > 0 ? categories[0].name : '',
         expenseDate: new Date().toISOString().split('T')[0],
         imageBoletaUrl: null,
         imageCompraUrl: null,
       })
     }
-  }, [item, open])
+  }, [item, open, categories])
 
   const updateField = (field: keyof ExpenseItemData, value: string | null) => {
     setForm((prev) => ({ ...prev, [field]: value }))
@@ -93,9 +109,8 @@ export function ExpenseItemDialog({ open, onOpenChange, item, reportId, onSave }
 
   const validate = (): string | null => {
     if (!form.description.trim()) return 'La descripción es requerida'
-    if (!form.amount || parseFloat(form.amount) <= 0) return 'El monto debe ser mayor a 0'
-    if (!form.numeroBoleta.trim()) return 'El número de boleta es requerido'
     if (!form.montoRendir || parseFloat(form.montoRendir) <= 0) return 'El monto a rendir debe ser mayor a 0'
+    if (!form.numeroBoleta.trim()) return 'El número de boleta es requerido'
     if (!form.category) return 'La categoría es requerida'
     if (!form.expenseDate) return 'La fecha es requerida'
     if (!form.imageBoletaUrl) return 'La foto de la boleta es requerida'
@@ -112,11 +127,12 @@ export function ExpenseItemDialog({ open, onOpenChange, item, reportId, onSave }
 
     setIsSaving(true)
     try {
+      const montoRendirValue = parseFloat(form.montoRendir)
       const payload = {
         description: form.description.trim(),
-        amount: parseFloat(form.amount),
+        amount: montoRendirValue, // Set amount = montoRendir for backward compatibility
         numeroBoleta: form.numeroBoleta.trim(),
-        montoRendir: parseFloat(form.montoRendir),
+        montoRendir: montoRendirValue,
         category: form.category,
         expenseDate: form.expenseDate,
         imageBoletaUrl: form.imageBoletaUrl,
@@ -159,6 +175,11 @@ export function ExpenseItemDialog({ open, onOpenChange, item, reportId, onSave }
     }
   }
 
+  const getCategoryLabel = (catName: string) => {
+    const cat = categories.find((c) => c.name === catName)
+    return cat ? `${cat.icon} ${cat.name}` : catName
+  }
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
@@ -172,6 +193,7 @@ export function ExpenseItemDialog({ open, onOpenChange, item, reportId, onSave }
         </DialogHeader>
 
         <div className="space-y-4 py-2">
+          {/* Descripción */}
           <div className="space-y-1">
             <Label className="text-xs">Descripción *</Label>
             <Input
@@ -181,33 +203,8 @@ export function ExpenseItemDialog({ open, onOpenChange, item, reportId, onSave }
             />
           </div>
 
+          {/* Grid: Monto a Rendir, N° Boleta */}
           <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1">
-              <Label className="text-xs">Monto *</Label>
-              <div className="relative">
-                <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-                <Input
-                  type="number"
-                  step="1"
-                  min="0"
-                  placeholder="0"
-                  value={form.amount}
-                  onChange={(e) => updateField('amount', e.target.value)}
-                  className="pl-9"
-                />
-              </div>
-            </div>
-            <div className="space-y-1">
-              <Label className="text-xs flex items-center gap-1">
-                <Receipt className="h-3 w-3" />
-                Número de Boleta *
-              </Label>
-              <Input
-                placeholder="Ej: 12345"
-                value={form.numeroBoleta}
-                onChange={(e) => updateField('numeroBoleta', e.target.value)}
-              />
-            </div>
             <div className="space-y-1">
               <Label className="text-xs">Monto a Rendir *</Label>
               <div className="relative">
@@ -224,6 +221,21 @@ export function ExpenseItemDialog({ open, onOpenChange, item, reportId, onSave }
               </div>
             </div>
             <div className="space-y-1">
+              <Label className="text-xs flex items-center gap-1">
+                <Receipt className="h-3 w-3" />
+                N° Boleta *
+              </Label>
+              <Input
+                placeholder="Ej: 12345"
+                value={form.numeroBoleta}
+                onChange={(e) => updateField('numeroBoleta', e.target.value)}
+              />
+            </div>
+          </div>
+
+          {/* Grid: Categoría, Fecha */}
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1">
               <Label className="text-xs">Categoría *</Label>
               <Select
                 value={form.category}
@@ -233,26 +245,25 @@ export function ExpenseItemDialog({ open, onOpenChange, item, reportId, onSave }
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {CATEGORIES.map((cat) => (
-                    <SelectItem key={cat.value} value={cat.value}>
-                      {cat.label}
+                  {categories.map((cat) => (
+                    <SelectItem key={cat.id} value={cat.name}>
+                      {cat.icon} {cat.name}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
+            <div className="space-y-1">
+              <Label className="text-xs">Fecha *</Label>
+              <Input
+                type="date"
+                value={form.expenseDate}
+                onChange={(e) => updateField('expenseDate', e.target.value)}
+              />
+            </div>
           </div>
 
-          <div className="space-y-1">
-            <Label className="text-xs">Fecha *</Label>
-            <Input
-              type="date"
-              value={form.expenseDate}
-              onChange={(e) => updateField('expenseDate', e.target.value)}
-            />
-          </div>
-
-          {/* Photo uploads */}
+          {/* Photos */}
           <div className="grid grid-cols-2 gap-4 pt-2 border-t">
             <div className="space-y-1">
               <Label className="text-xs font-semibold text-emerald-700 flex items-center gap-1">

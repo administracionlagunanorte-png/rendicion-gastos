@@ -3,7 +3,7 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "sqlite"
   url      = env("DATABASE_URL")
 }
 
@@ -33,6 +33,7 @@ model ExpenseReport {
   reviewNote  String?
   reviewedBy  String?
   reviewedAt  DateTime?
+  submittedAt DateTime?
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
 
@@ -47,14 +48,24 @@ model ExpenseItem {
   montoRendir    Float
   category       String
   expenseDate    DateTime
-  imageBoletaUrl String        @db.Text
-  imageCompraUrl String        @db.Text
+  imageBoletaUrl String
+  imageCompraUrl String
   reportId       String
   report         ExpenseReport @relation(fields: [reportId], references: [id], onDelete: Cascade)
   createdAt      DateTime      @default(now())
   updatedAt      DateTime      @updatedAt
 
   @@map("expense_items")
+}
+
+model Category {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  icon      String   @default("📦")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("categories")
 }
 
 model Notification {

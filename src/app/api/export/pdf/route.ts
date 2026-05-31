@@ -60,39 +60,11 @@ function generatePDFHtml(report: any): string {
     <tr>
       <td style="padding: 8px; border-bottom: 1px solid #e5e7eb;">${item.description}</td>
       <td style="padding: 8px; border-bottom: 1px solid #e5e7eb; text-align: center;">${item.numeroBoleta || '-'}</td>
-      <td style="padding: 8px; border-bottom: 1px solid #e5e7eb; text-align: right;">${formatCLP(item.amount)}</td>
       <td style="padding: 8px; border-bottom: 1px solid #e5e7eb; text-align: right;">${formatCLP(item.montoRendir || 0)}</td>
       <td style="padding: 8px; border-bottom: 1px solid #e5e7eb;">${item.category}</td>
       <td style="padding: 8px; border-bottom: 1px solid #e5e7eb; text-align: center;">${new Date(item.expenseDate).toLocaleDateString('es-CL')}</td>
     </tr>
   `).join('')
-
-  // Build image section with actual embedded images
-  const imageSection = report.items.map((item: any, index: number) => {
-    const parts = []
-    if (item.imageBoletaUrl) {
-      parts.push(`
-        <div style="margin-bottom: 16px; page-break-inside: avoid; border: 1px solid #e5e7eb; border-radius: 8px; padding: 12px; background: #fafafa;">
-          <p style="font-weight: 600; margin-bottom: 8px; color: #374151; font-size: 13px;">
-            Gasto #${index + 1}: ${item.description} — Foto de la Boleta
-          </p>
-          <p style="font-size: 11px; color: #6b7280; margin-bottom: 6px;">N. Boleta: ${item.numeroBoleta} | Monto: ${formatCLP(item.amount)} | A Rendir: ${formatCLP(item.montoRendir)}</p>
-          <img src="${item.imageBoletaUrl}" alt="Boleta: ${item.description}" style="max-width: 100%; max-height: 400px; border-radius: 6px; display: block; margin: 0 auto;" />
-        </div>
-      `)
-    }
-    if (item.imageCompraUrl) {
-      parts.push(`
-        <div style="margin-bottom: 16px; page-break-inside: avoid; border: 1px solid #e5e7eb; border-radius: 8px; padding: 12px; background: #fafafa;">
-          <p style="font-weight: 600; margin-bottom: 8px; color: #374151; font-size: 13px;">
-            Gasto #${index + 1}: ${item.description} — Foto de la Compra
-          </p>
-          <img src="${item.imageCompraUrl}" alt="Compra: ${item.description}" style="max-width: 100%; max-height: 400px; border-radius: 6px; display: block; margin: 0 auto;" />
-        </div>
-      `)
-    }
-    return parts.join('')
-  }).join('')
 
   // Build pairs of images side by side where both exist
   const imagePairs = report.items.map((item: any, index: number) => {
@@ -104,7 +76,7 @@ function generatePDFHtml(report: any): string {
             Gasto #${index + 1}: ${item.description}
           </p>
           <p style="font-size: 11px; color: #6b7280; margin-bottom: 10px;">
-            N. Boleta: ${item.numeroBoleta} | Monto: ${formatCLP(item.amount)} | A Rendir: ${formatCLP(item.montoRendir)} | ${item.category} | ${new Date(item.expenseDate).toLocaleDateString('es-CL')}
+            N. Boleta: ${item.numeroBoleta} | A Rendir: ${formatCLP(item.montoRendir)} | ${item.category} | ${new Date(item.expenseDate).toLocaleDateString('es-CL')}
           </p>
           <div style="display: flex; gap: 12px; flex-wrap: wrap;">
             <div style="flex: 1; min-width: 280px;">
@@ -126,7 +98,7 @@ function generatePDFHtml(report: any): string {
             <p style="font-weight: 600; margin-bottom: 4px; color: #1f2937; font-size: 13px;">
               Gasto #${index + 1}: ${item.description} — Foto de la Boleta
             </p>
-            <p style="font-size: 11px; color: #6b7280; margin-bottom: 6px;">N. Boleta: ${item.numeroBoleta} | Monto: ${formatCLP(item.amount)}</p>
+            <p style="font-size: 11px; color: #6b7280; margin-bottom: 6px;">N. Boleta: ${item.numeroBoleta} | A Rendir: ${formatCLP(item.montoRendir)}</p>
             <img src="${item.imageBoletaUrl}" alt="Boleta: ${item.description}" style="max-width: 100%; max-height: 400px; border-radius: 6px; display: block; margin: 0 auto;" />
           </div>
         `)
@@ -199,8 +171,8 @@ function generatePDFHtml(report: any): string {
       <p style="font-weight: 600; font-size: 13px;">${new Date(report.createdAt).toLocaleDateString('es-CL')}</p>
     </div>
     <div>
-      <p style="color: #6b7280; font-size: 11px; margin-bottom: 1px;">Monto Total</p>
-      <p style="font-weight: 700; color: #059669; font-size: 16px;">${formatCLP(report.totalAmount)}</p>
+      <p style="color: #6b7280; font-size: 11px; margin-bottom: 1px;">Total a Rendir</p>
+      <p style="font-weight: 700; color: #059669; font-size: 16px;">${formatCLP(totalMontoRendir)}</p>
     </div>
   </div>
 
@@ -212,7 +184,6 @@ function generatePDFHtml(report: any): string {
       <tr>
         <th>Descripción</th>
         <th style="text-align: center;">N. Boleta</th>
-        <th style="text-align: right;">Monto</th>
         <th style="text-align: right;">Monto a Rendir</th>
         <th>Categoría</th>
         <th style="text-align: center;">Fecha</th>
@@ -223,8 +194,7 @@ function generatePDFHtml(report: any): string {
       <tr class="total-row">
         <td style="padding: 8px; border-top: 2px solid #059669;">TOTAL</td>
         <td style="padding: 8px; border-top: 2px solid #059669;"></td>
-        <td style="padding: 8px; border-top: 2px solid #059669; text-align: right; color: #059669; font-size: 13px;">${formatCLP(report.totalAmount)}</td>
-        <td style="padding: 8px; border-top: 2px solid #059669; text-align: right; color: #2563eb; font-size: 13px;">${formatCLP(totalMontoRendir)}</td>
+        <td style="padding: 8px; border-top: 2px solid #059669; text-align: right; color: #059669; font-size: 13px;">${formatCLP(totalMontoRendir)}</td>
         <td style="padding: 8px; border-top: 2px solid #059669;"></td>
         <td style="padding: 8px; border-top: 2px solid #059669;"></td>
       </tr>

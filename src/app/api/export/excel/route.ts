@@ -60,7 +60,6 @@ export async function GET(request: NextRequest) {
       'Solicitante': r.user.name,
       'Email': r.user.email,
       'Estado': getStatusLabel(r.status),
-      'Monto Total': formatCLPForExcel(r.totalAmount),
       'Total a Rendir': formatCLPForExcel(r.items.reduce((sum: number, item: any) => sum + (item.montoRendir || 0), 0)),
       'Cantidad de Gastos': r.items.length,
       'Nota de Revisión': r.reviewNote || '',
@@ -70,7 +69,7 @@ export async function GET(request: NextRequest) {
     const summaryWs = XLSX.utils.json_to_sheet(summaryData)
     summaryWs['!cols'] = [
       { wch: 25 }, { wch: 30 }, { wch: 40 }, { wch: 20 }, { wch: 25 },
-      { wch: 18 }, { wch: 15 }, { wch: 15 }, { wch: 15 }, { wch: 30 }, { wch: 15 }, { wch: 15 }
+      { wch: 18 }, { wch: 15 }, { wch: 15 }, { wch: 30 }, { wch: 15 }, { wch: 15 }
     ]
     XLSX.utils.book_append_sheet(wb, summaryWs, 'Resumen Rendiciones')
 
@@ -85,7 +84,6 @@ export async function GET(request: NextRequest) {
           'Estado Rendición': idx === 0 ? getStatusLabel(r.status) : '',
           'Descripción Gasto': item.description,
           'Número de Boleta': item.numeroBoleta || '',
-          'Monto': formatCLPForExcel(item.amount),
           'Monto a Rendir': formatCLPForExcel(item.montoRendir || 0),
           'Categoría': item.category,
           'Fecha Gasto': new Date(item.expenseDate).toLocaleDateString('es-CL'),
@@ -99,7 +97,7 @@ export async function GET(request: NextRequest) {
       const detailWs = XLSX.utils.json_to_sheet(detailData)
       detailWs['!cols'] = [
         { wch: 25 }, { wch: 30 }, { wch: 20 }, { wch: 18 },
-        { wch: 30 }, { wch: 15 }, { wch: 12 }, { wch: 15 }, { wch: 18 }, { wch: 15 }, { wch: 12 }, { wch: 12 }
+        { wch: 30 }, { wch: 15 }, { wch: 15 }, { wch: 18 }, { wch: 15 }, { wch: 12 }, { wch: 12 }
       ]
       XLSX.utils.book_append_sheet(wb, detailWs, 'Detalle Gastos')
     }

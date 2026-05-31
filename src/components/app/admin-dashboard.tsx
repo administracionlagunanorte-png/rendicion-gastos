@@ -18,6 +18,9 @@ import {
   PlusCircle,
   Wallet,
   User,
+  Timer,
+  Zap,
+  Hourglass,
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -35,6 +38,14 @@ const statusConfig: Record<string, { label: string; color: string; icon: React.R
   APPROVED: { label: 'Aprobado', color: 'bg-emerald-50 text-emerald-700 border-emerald-200', icon: <CheckCircle2 className="h-3 w-3" /> },
   REJECTED: { label: 'Rechazado', color: 'bg-red-50 text-red-700 border-red-200', icon: <XCircle className="h-3 w-3" /> },
   MODIFICATION_REQUESTED: { label: 'Modificación', color: 'bg-orange-50 text-orange-700 border-orange-200', icon: <AlertTriangle className="h-3 w-3" /> },
+}
+
+function formatHours(hours: number): string {
+  if (hours === 0) return '-'
+  if (hours < 1) return `${Math.round(hours * 60)} min`
+  if (hours < 24) return `${Math.round(hours * 10) / 10} hrs`
+  const days = Math.round((hours / 24) * 10) / 10
+  return `${days} días`
 }
 
 export function AdminDashboard() {
@@ -198,6 +209,137 @@ export function AdminDashboard() {
           </motion.div>
         ))}
       </div>
+
+      {/* Time Statistics Card */}
+      <Card className="shadow-sm border-emerald-200">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base flex items-center gap-2">
+            <Timer className="h-4 w-4 text-emerald-600" />
+            Estadísticas de Tiempo
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {statsLoading ? (
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              {[1, 2, 3].map((i) => (
+                <Skeleton key={i} className="h-20 w-full" />
+              ))}
+            </div>
+          ) : stats?.timeStats?.count > 0 ? (
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div className="p-4 bg-emerald-50 rounded-lg text-center">
+                <div className="flex items-center justify-center gap-2 mb-2">
+                  <Clock className="h-4 w-4 text-emerald-600" />
+                  <span className="text-xs font-medium text-emerald-600">Tiempo Promedio</span>
+                </div>
+                <p className="text-2xl font-bold text-emerald-700">
+                  {formatHours(stats.timeStats.avgApprovalHours)}
+                </p>
+                <p className="text-[10px] text-emerald-500 mt-1">desde envío hasta aprobación</p>
+              </div>
+              <div className="p-4 bg-blue-50 rounded-lg text-center">
+                <div className="flex items-center justify-center gap-2 mb-2">
+                  <Zap className="h-4 w-4 text-blue-600" />
+                  <span className="text-xs font-medium text-blue-600">Aprobación Más Rápida</span>
+                </div>
+                <p className="text-2xl font-bold text-blue-700">
+                  {formatHours(stats.timeStats.fastestApprovalHours)}
+                </p>
+                <p className="text-[10px] text-blue-500 mt-1">menor tiempo de aprobación</p>
+              </div>
+              <div className="p-4 bg-amber-50 rounded-lg text-center">
+                <div className="flex items-center justify-center gap-2 mb-2">
+                  <Hourglass className="h-4 w-4 text-amber-600" />
+                  <span className="text-xs font-medium text-amber-600">Aprobación Más Lenta</span>
+                </div>
+                <p className="text-2xl font-bold text-amber-700">
+                  {formatHours(stats.timeStats.slowestApprovalHours)}
+                </p>
+                <p className="text-[10px] text-amber-500 mt-1">mayor tiempo de aprobación</p>
+              </div>
+            </div>
+          ) : (
+            <div className="text-center py-6">
+              <Timer className="h-10 w-10 mx-auto text-muted-foreground/30 mb-2" />
+              <p className="text-sm text-muted-foreground">No hay datos de tiempo de aprobación aún</p>
+              <p className="text-xs text-muted-foreground mt-1">Los datos aparecerán cuando se aprueben rendiciones enviadas</p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Worker Statistics Card */}
+      <Card className="shadow-sm">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base flex items-center gap-2">
+            <Users className="h-4 w-4 text-emerald-600" />
+            Estadísticas por Trabajador
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {statsLoading ? (
+            <div className="space-y-3">
+              {[1, 2, 3].map((i) => (
+                <Skeleton key={i} className="h-10 w-full" />
+              ))}
+            </div>
+          ) : stats?.workerStats?.length > 0 ? (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b">
+                    <th className="text-left py-2 px-2 text-xs font-medium text-muted-foreground">Trabajador</th>
+                    <th className="text-right py-2 px-2 text-xs font-medium text-muted-foreground">Rendiciones</th>
+                    <th className="text-right py-2 px-2 text-xs font-medium text-muted-foreground">Compras</th>
+                    <th className="text-right py-2 px-2 text-xs font-medium text-muted-foreground">Total Rendido</th>
+                    <th className="text-right py-2 px-2 text-xs font-medium text-muted-foreground">Tiempo Prom. Aprobación</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {stats.workerStats.map((worker: any) => (
+                    <tr key={worker.userId} className="border-b hover:bg-muted/30 transition-colors">
+                      <td className="py-3 px-2">
+                        <div className="flex items-center gap-2">
+                          <div className="w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-semibold bg-emerald-100 text-emerald-700">
+                            {worker.userName.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2)}
+                          </div>
+                          <div>
+                            <p className="font-medium text-sm">{worker.userName}</p>
+                            <p className="text-[10px] text-muted-foreground">{worker.userEmail}</p>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="py-3 px-2 text-right">
+                        <Badge variant="outline" className="text-[10px] bg-emerald-50 text-emerald-700 border-emerald-200">
+                          {worker.rendicionesCount}
+                        </Badge>
+                      </td>
+                      <td className="py-3 px-2 text-right">
+                        <Badge variant="outline" className="text-[10px] bg-blue-50 text-blue-700 border-blue-200">
+                          {worker.comprasCount}
+                        </Badge>
+                      </td>
+                      <td className="py-3 px-2 text-right font-medium text-emerald-700">
+                        {formatCLP(worker.totalRendido)}
+                      </td>
+                      <td className="py-3 px-2 text-right">
+                        <span className="text-xs text-muted-foreground">
+                          {formatHours(worker.avgApprovalHours)}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <div className="text-center py-6">
+              <Users className="h-10 w-10 mx-auto text-muted-foreground/30 mb-2" />
+              <p className="text-sm text-muted-foreground">No hay datos de trabajadores</p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Budget Control Summary */}
       <Card className="shadow-sm border-blue-200">

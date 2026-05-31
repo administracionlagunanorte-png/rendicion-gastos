@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useSession } from '@/lib/auth-context'
 import { formatCLP } from '@/lib/format-currency'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
@@ -44,10 +44,17 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
+  DialogTrigger,
 } from '@/components/ui/dialog'
 import { useAppStore } from '@/lib/store'
 import { ExpenseItemDialog } from './expense-item-dialog'
 import { toast } from 'sonner'
+
+interface Category {
+  id: string
+  name: string
+  icon: string
+}
 
 const statusConfig: Record<string, { label: string; color: string; icon: React.ReactNode; description: string }> = {
   DRAFT: {
@@ -82,16 +89,6 @@ const statusConfig: Record<string, { label: string; color: string; icon: React.R
   },
 }
 
-const categoryLabels: Record<string, string> = {
-  'Alimentación': 'Alimentación',
-  'Transporte': 'Transporte',
-  'Alojamiento': 'Alojamiento',
-  'Entretenimiento': 'Entretenimiento',
-  'Oficina': 'Oficina',
-  'Otro': 'Otro',
-  'Capacitación': 'Capacitación',
-}
-
 export function ReportDetail() {
   const { data: session } = useSession()
   const queryClient = useQueryClient()
@@ -104,9 +101,22 @@ export function ReportDetail() {
   const [showItemDialog, setShowItemDialog] = useState(false)
   const [deleteItemId, setDeleteItemId] = useState<string | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
+  const [categories, setCategories] = useState<Category[]>([])
 
   const isAdmin = session?.user?.role === 'ADMIN'
   const userId = session?.user?.id
+
+  // Fetch categories for display
+  useEffect(() => {
+    fetch('/api/categories')
+      .then((res) => res.json())
+      .then((data) => {
+        if (Array.isArray(data)) {
+          setCategories(data)
+        }
+      })
+      .catch(() => {})
+  }, [])
 
   const { data: report, isLoading } = useQuery({
     queryKey: ['report', selectedReportId],
@@ -117,6 +127,11 @@ export function ReportDetail() {
     },
     enabled: !!selectedReportId,
   })
+
+  const getCategoryDisplay = (catName: string) => {
+    const cat = categories.find((c) => c.name === catName)
+    return cat ? `${cat.icon} ${cat.name}` : catName
+  }
 
   const handleStatusChange = async (status: string) => {
     setIsActing(true)
@@ -197,7 +212,6 @@ export function ReportDetail() {
   const handleExport = async (format: 'excel' | 'pdf') => {
     try {
       if (format === 'pdf') {
-        // Open PDF (HTML with images) in a new tab for proper rendering with images
         const url = `/api/export/pdf?reportId=${selectedReportId}`
         window.open(url, '_blank')
         toast.success('Documento abierto en nueva pestaña. Use Ctrl+P para guardar como PDF.')
@@ -449,7 +463,7 @@ export function ReportDetail() {
                         </span>
                         <span className="text-xs text-muted-foreground flex items-center gap-1">
                           <span className="inline-block w-2 h-2 rounded-full bg-emerald-400" />
-                          {categoryLabels[item.category] || item.category}
+                          {getCategoryDisplay(item.category)}
                         </span>
                         <span className="text-xs text-muted-foreground flex items-center gap-1">
                           <Calendar className="h-3 w-3" />
@@ -458,9 +472,6 @@ export function ReportDetail() {
                       </div>
                       <div className="flex flex-wrap gap-2 mt-2">
                         <span className="text-xs font-semibold text-emerald-700">
-                          Monto: {formatCLP(item.amount)}
-                        </span>
-                        <span className="text-xs font-semibold text-blue-700">
                           A Rendir: {formatCLP(item.montoRendir)}
                         </span>
                       </div>
@@ -537,14 +548,8 @@ export function ReportDetail() {
           <Separator className="my-4" />
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <span className="text-sm font-semibold">Total Montos</span>
-              <span className="text-2xl font-bold text-emerald-700">
-                {formatCLP(report.totalAmount)}
-              </span>
-            </div>
-            <div className="flex items-center justify-between">
               <span className="text-sm font-semibold">Total a Rendir</span>
-              <span className="text-2xl font-bold text-blue-700">
+              <span className="text-2xl font-bold text-emerald-700">
                 {formatCLP(totalMontoRendir)}
               </span>
             </div>
@@ -587,7 +592,7 @@ export function ReportDetail() {
                   <DialogHeader>
                     <DialogTitle>Confirmar Aprobación</DialogTitle>
                     <DialogDescription>
-                      ¿Está seguro de que desea aprobar esta rendición por {formatCLP(report.totalAmount)}?
+                      ¿Está seguro de que desea aprobar esta rendición por {formatCLP(totalMontoRendir)}?
                     </DialogDescription>
                   </DialogHeader>
                   <DialogFooter>

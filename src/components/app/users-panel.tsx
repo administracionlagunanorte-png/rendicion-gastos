@@ -21,6 +21,8 @@ import {
   AlertTriangle,
   TrendingUp,
   Wallet,
+  PlusCircle,
+  Tag,
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -70,6 +72,15 @@ export function UsersPanel() {
   const [deleteUserId, setDeleteUserId] = useState<string | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
 
+  // Category management state
+  const [showCategoryDialog, setShowCategoryDialog] = useState(false)
+  const [editingCategory, setEditingCategory] = useState<any>(null)
+  const [categoryName, setCategoryName] = useState('')
+  const [categoryIcon, setCategoryIcon] = useState('📦')
+  const [isSavingCategory, setIsSavingCategory] = useState(false)
+  const [deleteCategoryId, setDeleteCategoryId] = useState<string | null>(null)
+  const [isDeletingCategory, setIsDeletingCategory] = useState(false)
+
   const { data, isLoading } = useQuery({
     queryKey: ['users', searchTerm],
     queryFn: async () => {
@@ -77,6 +88,16 @@ export function UsersPanel() {
       if (searchTerm) params.set('search', searchTerm)
       params.set('withBudget', 'true')
       const res = await fetch(`/api/users?${params.toString()}`)
+      if (!res.ok) throw new Error('Error')
+      return res.json()
+    },
+  })
+
+  // Fetch categories
+  const { data: categories, isLoading: categoriesLoading } = useQuery({
+    queryKey: ['categories'],
+    queryFn: async () => {
+      const res = await fetch('/api/categories')
       if (!res.ok) throw new Error('Error')
       return res.json()
     },
@@ -193,6 +214,77 @@ export function UsersPanel() {
     }
   }
 
+  // Category handlers
+  const openCategoryDialog = (category?: any) => {
+    if (category) {
+      setEditingCategory(category)
+      setCategoryName(category.name)
+      setCategoryIcon(category.icon)
+    } else {
+      setEditingCategory(null)
+      setCategoryName('')
+      setCategoryIcon('📦')
+    }
+    setShowCategoryDialog(true)
+  }
+
+  const handleSaveCategory = async () => {
+    if (!categoryName.trim()) { toast.error('El nombre de la categoría es requerido'); return }
+    setIsSavingCategory(true)
+    try {
+      if (editingCategory) {
+        // Update
+        const res = await fetch(`/api/categories/${editingCategory.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name: categoryName.trim(), icon: categoryIcon }),
+        })
+        if (!res.ok) {
+          const data = await res.json()
+          throw new Error(data.error || 'Error al actualizar categoría')
+        }
+        toast.success('Categoría actualizada correctamente')
+      } else {
+        // Create
+        const res = await fetch('/api/categories', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name: categoryName.trim(), icon: categoryIcon }),
+        })
+        if (!res.ok) {
+          const data = await res.json()
+          throw new Error(data.error || 'Error al crear categoría')
+        }
+        toast.success('Categoría creada correctamente')
+      }
+      setShowCategoryDialog(false)
+      queryClient.invalidateQueries({ queryKey: ['categories'] })
+    } catch (err: any) {
+      toast.error(err.message || 'Error al guardar categoría')
+    } finally {
+      setIsSavingCategory(false)
+    }
+  }
+
+  const handleDeleteCategory = async () => {
+    if (!deleteCategoryId) return
+    setIsDeletingCategory(true)
+    try {
+      const res = await fetch(`/api/categories/${deleteCategoryId}`, { method: 'DELETE' })
+      if (!res.ok) {
+        const data = await res.json()
+        throw new Error(data.error || 'Error al eliminar categoría')
+      }
+      toast.success('Categoría eliminada exitosamente')
+      setDeleteCategoryId(null)
+      queryClient.invalidateQueries({ queryKey: ['categories'] })
+    } catch (err: any) {
+      toast.error(err.message || 'Error al eliminar categoría')
+    } finally {
+      setIsDeletingCategory(false)
+    }
+  }
+
   const openBudgetDialog = (user: any) => {
     setSelectedUser(user)
     setBudgetAmount(user.montoAsignado?.toString() || '0')
@@ -212,6 +304,8 @@ export function UsersPanel() {
   const totalAprobado = data?.users?.reduce((sum: number, u: any) => sum + (u.montoAprobado || 0), 0) || 0
   const totalRendido = data?.users?.reduce((sum: number, u: any) => sum + (u.montoRendido || 0), 0) || 0
   const totalRestante = data?.users?.reduce((sum: number, u: any) => sum + (u.montoRestante || 0), 0) || 0
+
+  const emojiOptions = ['📦', '🍽️', '🚗', '🏨', '🎭', '🏢', '📚', '💻', '🛒', '✈️', '🏥', '🎓', '🎮', '🏠', '🔧', '📱', '🎵', '☕', '🎪', '📰']
 
   return (
     <div className="space-y-6">
@@ -493,6 +587,73 @@ export function UsersPanel() {
         </CardContent>
       </Card>
 
+      {/* Category Management */}
+      <Card className="shadow-sm border-emerald-200">
+        <CardHeader className="pb-3">
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-base flex items-center gap-2">
+              <Tag className="h-4 w-4 text-emerald-600" />
+              Gestión de Categorías
+            </CardTitle>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => openCategoryDialog()}
+              className="text-emerald-600 border-emerald-200 hover:bg-emerald-50"
+            >
+              <PlusCircle className="h-4 w-4 mr-1" />
+              Agregar Categoría
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {categoriesLoading ? (
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+              {[1, 2, 3, 4, 5, 6].map((i) => (
+                <Skeleton key={i} className="h-12 w-full" />
+              ))}
+            </div>
+          ) : categories?.length === 0 ? (
+            <div className="text-center py-6">
+              <Tag className="h-10 w-10 mx-auto text-muted-foreground/30 mb-2" />
+              <p className="text-sm text-muted-foreground">No hay categorías</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+              {categories?.map((cat: any) => (
+                <div
+                  key={cat.id}
+                  className="flex items-center justify-between gap-2 p-3 border rounded-lg hover:bg-muted/30 transition-colors group"
+                >
+                  <div className="flex items-center gap-2 min-w-0">
+                    <span className="text-lg shrink-0">{cat.icon}</span>
+                    <span className="text-sm font-medium truncate">{cat.name}</span>
+                  </div>
+                  <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-6 w-6 text-muted-foreground hover:text-emerald-600 hover:bg-emerald-50"
+                      onClick={() => openCategoryDialog(cat)}
+                    >
+                      <Pencil className="h-3 w-3" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-6 w-6 text-muted-foreground hover:text-red-600 hover:bg-red-50"
+                      onClick={() => setDeleteCategoryId(cat.id)}
+                    >
+                      <Trash2 className="h-3 w-3" />
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
       {/* Create User Dialog */}
       <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
         <DialogContent className="sm:max-w-md">
@@ -674,6 +835,81 @@ export function UsersPanel() {
             <Button variant="outline" onClick={() => setDeleteUserId(null)} disabled={isDeleting}>Cancelar</Button>
             <Button variant="destructive" onClick={handleDeleteUser} disabled={isDeleting}>
               {isDeleting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+              Eliminar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Category Create/Edit Dialog */}
+      <Dialog open={showCategoryDialog} onOpenChange={setShowCategoryDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Tag className="h-5 w-5 text-emerald-600" />
+              {editingCategory ? 'Editar Categoría' : 'Nueva Categoría'}
+            </DialogTitle>
+            <DialogDescription>
+              {editingCategory ? 'Modifique el nombre y el ícono de la categoría' : 'Cree una nueva categoría para clasificar los gastos'}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-2">
+            <div className="space-y-2">
+              <Label>Nombre de la Categoría *</Label>
+              <Input
+                placeholder="Ej: Alimentación"
+                value={categoryName}
+                onChange={(e) => setCategoryName(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Ícono</Label>
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg border flex items-center justify-center text-xl bg-muted/30">
+                  {categoryIcon}
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  {emojiOptions.map((emoji) => (
+                    <button
+                      key={emoji}
+                      type="button"
+                      onClick={() => setCategoryIcon(emoji)}
+                      className={`w-8 h-8 rounded-md border text-sm flex items-center justify-center transition-colors ${
+                        categoryIcon === emoji ? 'border-emerald-500 bg-emerald-50' : 'border-muted hover:bg-muted/50'
+                      }`}
+                    >
+                      {emoji}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setShowCategoryDialog(false)} disabled={isSavingCategory}>Cancelar</Button>
+            <Button onClick={handleSaveCategory} disabled={isSavingCategory} className="bg-emerald-600 hover:bg-emerald-700 text-white">
+              {isSavingCategory ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Check className="mr-2 h-4 w-4" />}
+              {editingCategory ? 'Guardar Cambios' : 'Crear Categoría'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Category Dialog */}
+      <Dialog open={!!deleteCategoryId} onOpenChange={(open) => !open && setDeleteCategoryId(null)}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Eliminar Categoría</DialogTitle>
+            <DialogDescription>
+              ¿Está seguro de que desea eliminar esta categoría? No se pueden eliminar categorías que estén siendo usadas en gastos.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setDeleteCategoryId(null)} disabled={isDeletingCategory}>Cancelar</Button>
+            <Button variant="destructive" onClick={handleDeleteCategory} disabled={isDeletingCategory}>
+              {isDeletingCategory ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
               Eliminar
             </Button>
           </DialogFooter>

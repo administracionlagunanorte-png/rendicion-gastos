@@ -46,7 +46,7 @@ export async function GET(request: NextRequest) {
       // Obtener gastos por categoría
       const expensesByCategory = await db.expenseItem.groupBy({
         by: ["category"],
-        _sum: { amount: true },
+        _sum: { montoRendir: true },
         _count: { category: true }
       })
 
@@ -61,6 +61,101 @@ export async function GET(request: NextRequest) {
         }
       })
 
+      // Time statistics: average time between submittedAt and reviewedAt for approved reports
+      const approvedReportsWithDates = await db.expenseReport.findMany({
+        where: {
+          status: "APPROVED",
+          submittedAt: { not: null },
+          reviewedAt: { not: null },
+        },
+        select: {
+          submittedAt: true,
+          reviewedAt: true,
+        },
+      })
+
+      let timeStats = {
+        avgApprovalMs: 0,
+        fastestApprovalMs: 0,
+        slowestApprovalMs: 0,
+        avgApprovalHours: 0,
+        fastestApprovalHours: 0,
+        slowestApprovalHours: 0,
+        count: 0,
+      }
+
+      if (approvedReportsWithDates.length > 0) {
+        const approvalTimes = approvedReportsWithDates
+          .filter((r) => r.submittedAt && r.reviewedAt)
+          .map((r) => new Date(r.reviewedAt!).getTime() - new Date(r.submittedAt!).getTime())
+          .filter((ms) => ms > 0)
+
+        if (approvalTimes.length > 0) {
+          const avg = approvalTimes.reduce((a, b) => a + b, 0) / approvalTimes.length
+          const fastest = Math.min(...approvalTimes)
+          const slowest = Math.max(...approvalTimes)
+          timeStats = {
+            avgApprovalMs: avg,
+            fastestApprovalMs: fastest,
+            slowestApprovalMs: slowest,
+            avgApprovalHours: Math.round((avg / (1000 * 60 * 60)) * 100) / 100,
+            fastestApprovalHours: Math.round((fastest / (1000 * 60 * 60)) * 100) / 100,
+            slowestApprovalHours: Math.round((slowest / (1000 * 60 * 60)) * 100) / 100,
+            count: approvalTimes.length,
+          }
+        }
+      }
+
+      // Per-worker statistics
+      const users = await db.user.findMany({
+        where: { role: "USER" },
+        select: { id: true, name: true, email: true },
+      })
+
+      const workerStats = await Promise.all(
+        users.map(async (user) => {
+          const userReports = await db.expenseReport.findMany({
+            where: { userId: user.id },
+            include: { items: true },
+          })
+
+          const rendicionesCount = userReports.length
+          const comprasCount = userReports.reduce(
+            (sum, r) => sum + r.items.length,
+            0
+          )
+          const totalRendido = userReports.reduce(
+            (sum, r) => sum + r.items.reduce((s, i) => s + (i.montoRendir || 0), 0),
+            0
+          )
+
+          // Average approval time for this user
+          const approvedWithDates = userReports.filter(
+            (r) => r.status === "APPROVED" && r.submittedAt && r.reviewedAt
+          )
+          let avgApprovalHours = 0
+          if (approvedWithDates.length > 0) {
+            const times = approvedWithDates
+              .map((r) => new Date(r.reviewedAt!).getTime() - new Date(r.submittedAt!).getTime())
+              .filter((ms) => ms > 0)
+            if (times.length > 0) {
+              avgApprovalHours =
+                Math.round((times.reduce((a, b) => a + b, 0) / times.length / (1000 * 60 * 60)) * 100) / 100
+            }
+          }
+
+          return {
+            userId: user.id,
+            userName: user.name,
+            userEmail: user.email,
+            rendicionesCount,
+            comprasCount,
+            totalRendido,
+            avgApprovalHours,
+          }
+        })
+      )
+
       return NextResponse.json({
         totalReports,
         pendingReports,
@@ -70,7 +165,9 @@ export async function GET(request: NextRequest) {
         totalAmountApproved: totalAmount._sum.totalAmount || 0,
         reportsByStatus,
         expensesByCategory,
-        recentReports
+        recentReports,
+        timeStats,
+        workerStats,
       })
     } else {
       // Estadísticas para usuario normal
@@ -96,7 +193,7 @@ export async function GET(request: NextRequest) {
       // Gastos por categoría del usuario
       const myExpensesByCategory = await db.expenseItem.groupBy({
         by: ["category"],
-        _sum: { amount: true },
+        _sum: { montoRendir: true },
         _count: { category: true },
         where: {
           report: { userId }
