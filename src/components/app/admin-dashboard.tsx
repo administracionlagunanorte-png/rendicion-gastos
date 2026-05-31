@@ -21,6 +21,7 @@ import {
   Timer,
   Zap,
   Hourglass,
+  Search,
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -50,6 +51,7 @@ function formatHours(hours: number): string {
 
 export function AdminDashboard() {
   const { filters, setFilters, resetFilters, setCurrentView } = useAppStore()
+  const [search, setSearch] = useState('')
 
   const { data: stats, isLoading: statsLoading } = useQuery({
     queryKey: ['stats'],
@@ -68,6 +70,15 @@ export function AdminDashboard() {
       return res.json()
     },
   })
+
+  // Filter pending and recent reports by search
+  const filteredPendingReports = search
+    ? pendingData?.reports?.filter((report: any) =>
+        report.title.toLowerCase().includes(search.toLowerCase()) ||
+        (report.correlativeNumber != null && String(report.correlativeNumber).includes(search)) ||
+        report.user?.name?.toLowerCase().includes(search.toLowerCase())
+      )
+    : pendingData?.reports
 
   // Fetch users with budget data for the control panel
   const { data: budgetData, isLoading: budgetLoading } = useQuery({
@@ -175,6 +186,17 @@ export function AdminDashboard() {
             Exportar Todo
           </Button>
         </div>
+      </div>
+
+      {/* Search Bar */}
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        <Input
+          placeholder="Buscar por título, número o usuario..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="pl-9 h-10"
+        />
       </div>
 
       {/* Stats Cards */}
@@ -463,14 +485,14 @@ export function AdminDashboard() {
                 </div>
               ))}
             </div>
-          ) : pendingData?.reports?.length === 0 ? (
+          ) : filteredPendingReports?.length === 0 ? (
             <div className="text-center py-6">
               <CheckCircle2 className="h-10 w-10 mx-auto text-emerald-300 mb-2" />
-              <p className="text-sm text-muted-foreground">No hay rendiciones pendientes de revisión</p>
+              <p className="text-sm text-muted-foreground">{search ? 'No hay resultados para la búsqueda' : 'No hay rendiciones pendientes de revisión'}</p>
             </div>
           ) : (
             <div className="space-y-3">
-              {pendingData?.reports?.map((report: any) => (
+              {filteredPendingReports?.map((report: any) => (
                 <div
                   key={report.id}
                   className="flex items-center justify-between py-2.5 px-3 rounded-lg hover:bg-muted/50 cursor-pointer transition-colors border border-transparent hover:border-emerald-100"
@@ -480,7 +502,14 @@ export function AdminDashboard() {
                   }}
                 >
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium truncate">{report.title}</p>
+                    <div className="flex items-center gap-2">
+                      {report.correlativeNumber != null && (
+                        <Badge variant="outline" className="text-[9px] bg-emerald-50 text-emerald-700 border-emerald-200 shrink-0 px-1">
+                          R-{String(report.correlativeNumber).padStart(3, '0')}
+                        </Badge>
+                      )}
+                      <p className="text-sm font-medium truncate">{report.title}</p>
+                    </div>
                     <p className="text-xs text-muted-foreground">
                       {report.user?.name} · {new Date(report.createdAt).toLocaleDateString('es-CL')} · {formatCLP(report.totalAmount)}
                     </p>
@@ -513,14 +542,24 @@ export function AdminDashboard() {
                 <Skeleton key={i} className="h-4 w-full" />
               ))}
             </div>
-          ) : stats?.recentReports?.length === 0 ? (
+          ) : (stats?.recentReports || []).filter((report: any) => {
+              if (!search) return true
+              return report.title.toLowerCase().includes(search.toLowerCase()) ||
+                (report.correlativeNumber != null && String(report.correlativeNumber).includes(search)) ||
+                report.user?.name?.toLowerCase().includes(search.toLowerCase())
+            }).length === 0 ? (
             <div className="text-center py-6">
               <FileText className="h-10 w-10 mx-auto text-muted-foreground/30 mb-2" />
-              <p className="text-sm text-muted-foreground">No hay actividad reciente</p>
+              <p className="text-sm text-muted-foreground">{search ? 'No hay resultados para la búsqueda' : 'No hay actividad reciente'}</p>
             </div>
           ) : (
             <div className="space-y-3">
-              {stats?.recentReports?.map((report: any) => {
+              {(stats?.recentReports || []).filter((report: any) => {
+                if (!search) return true
+                return report.title.toLowerCase().includes(search.toLowerCase()) ||
+                  (report.correlativeNumber != null && String(report.correlativeNumber).includes(search)) ||
+                  report.user?.name?.toLowerCase().includes(search.toLowerCase())
+              }).map((report: any) => {
                 const st = statusConfig[report.status] || statusConfig.DRAFT
                 return (
                   <div
@@ -532,7 +571,14 @@ export function AdminDashboard() {
                     }}
                   >
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium truncate">{report.title}</p>
+                      <div className="flex items-center gap-2">
+                        {report.correlativeNumber != null && (
+                          <Badge variant="outline" className="text-[9px] bg-emerald-50 text-emerald-700 border-emerald-200 shrink-0 px-1">
+                            R-{String(report.correlativeNumber).padStart(3, '0')}
+                          </Badge>
+                        )}
+                        <p className="text-sm font-medium truncate">{report.title}</p>
+                      </div>
                       <p className="text-xs text-muted-foreground">
                         {report.user?.name} · {new Date(report.createdAt).toLocaleDateString('es-CL')}
                       </p>

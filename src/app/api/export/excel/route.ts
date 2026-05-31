@@ -52,8 +52,20 @@ export async function GET(request: NextRequest) {
 
     const wb = XLSX.utils.book_new()
 
+    // Header row for Laguna Norte branding
+    const headerData = [{ 'Laguna Norte — Sistema de Rendición de Gastos': '' }]
+    const headerWs = XLSX.utils.json_to_sheet(headerData, { skipHeader: true })
+    headerWs['!cols'] = [{ wch: 50 }]
+    headerWs['!merges'] = [{ s: { r: 0, c: 0 }, e: { r: 0, c: 11 } }]
+    // Style the header cell
+    if (!headerWs['A1']) headerWs['A1'] = {}
+    headerWs['A1'].v = 'Laguna Norte — Sistema de Rendición de Gastos'
+    headerWs['A1'].s = { font: { bold: true, sz: 14 }, alignment: { horizontal: 'center' } }
+    XLSX.utils.book_append_sheet(wb, headerWs, 'Laguna Norte')
+
     // Sheet 1: Summary
     const summaryData = reports.map(r => ({
+      'Correlativo': r.correlativeNumber ? `R-${String(r.correlativeNumber).padStart(3, '0')}` : '',
       'ID Rendición': r.id,
       'Título': r.title,
       'Descripción': r.description || '',
@@ -68,7 +80,7 @@ export async function GET(request: NextRequest) {
     }))
     const summaryWs = XLSX.utils.json_to_sheet(summaryData)
     summaryWs['!cols'] = [
-      { wch: 25 }, { wch: 30 }, { wch: 40 }, { wch: 20 }, { wch: 25 },
+      { wch: 12 }, { wch: 25 }, { wch: 30 }, { wch: 40 }, { wch: 20 }, { wch: 25 },
       { wch: 18 }, { wch: 15 }, { wch: 15 }, { wch: 30 }, { wch: 15 }, { wch: 15 }
     ]
     XLSX.utils.book_append_sheet(wb, summaryWs, 'Resumen Rendiciones')
@@ -76,8 +88,10 @@ export async function GET(request: NextRequest) {
     // Sheet 2: Detail
     const detailData: any[] = []
     reports.forEach(r => {
+      const correlativo = r.correlativeNumber ? `R-${String(r.correlativeNumber).padStart(3, '0')}` : ''
       r.items.forEach((item, idx) => {
         detailData.push({
+          'Correlativo': idx === 0 ? correlativo : '',
           'ID Rendición': idx === 0 ? r.id : '',
           'Título Rendición': idx === 0 ? r.title : '',
           'Solicitante': idx === 0 ? r.user.name : '',
@@ -96,7 +110,7 @@ export async function GET(request: NextRequest) {
     if (detailData.length > 0) {
       const detailWs = XLSX.utils.json_to_sheet(detailData)
       detailWs['!cols'] = [
-        { wch: 25 }, { wch: 30 }, { wch: 20 }, { wch: 18 },
+        { wch: 12 }, { wch: 25 }, { wch: 30 }, { wch: 20 }, { wch: 18 },
         { wch: 30 }, { wch: 15 }, { wch: 15 }, { wch: 18 }, { wch: 15 }, { wch: 12 }, { wch: 12 }
       ]
       XLSX.utils.book_append_sheet(wb, detailWs, 'Detalle Gastos')

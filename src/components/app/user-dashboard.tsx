@@ -194,7 +194,14 @@ export function UserDashboard() {
                     }}
                   >
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium truncate">{report.title}</p>
+                      <div className="flex items-center gap-2">
+                        {report.correlativeNumber != null && (
+                          <Badge variant="outline" className="text-[9px] bg-emerald-50 text-emerald-700 border-emerald-200 shrink-0 px-1">
+                            R-{String(report.correlativeNumber).padStart(3, '0')}
+                          </Badge>
+                        )}
+                        <p className="text-sm font-medium truncate">{report.title}</p>
+                      </div>
                       <p className="text-xs text-muted-foreground">
                         {new Date(report.createdAt).toLocaleDateString('es-CL')} · {formatCLP(report.totalAmount)}
                       </p>

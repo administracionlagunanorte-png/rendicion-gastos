@@ -22,20 +22,21 @@ model User {
 }
 
 model ExpenseReport {
-  id          String        @id @default(cuid())
-  title       String
-  description String?
-  status      String        @default("DRAFT")
-  totalAmount Float         @default(0)
-  userId      String
-  user        User          @relation(fields: [userId], references: [id])
-  items       ExpenseItem[]
-  reviewNote  String?
-  reviewedBy  String?
-  reviewedAt  DateTime?
-  submittedAt DateTime?
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
+  id                String        @id @default(cuid())
+  correlativeNumber Int           @unique
+  title             String
+  description       String?
+  status            String        @default("DRAFT")
+  totalAmount       Float         @default(0)
+  userId            String
+  user              User          @relation(fields: [userId], references: [id])
+  items             ExpenseItem[]
+  reviewNote        String?
+  reviewedBy        String?
+  reviewedAt        DateTime?
+  submittedAt       DateTime?
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
 
   @@map("expense_reports")
 }
@@ -43,7 +44,6 @@ model ExpenseReport {
 model ExpenseItem {
   id             String        @id @default(cuid())
   description    String
-  amount         Float
   numeroBoleta   String
   montoRendir    Float
   category       String

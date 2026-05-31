@@ -150,9 +150,12 @@ function generatePDFHtml(report: any): string {
   </div>
 
   <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px;">
-    <div>
-      <h1>Rendición de Gastos</h1>
-      <p style="color: #6b7280; font-size: 13px; margin-top: 2px;">${report.title}</p>
+    <div style="display: flex; align-items: center; gap: 14px;">
+      <img src="/logo.jpg" alt="Laguna Norte" style="height: 48px; width: 48px; border-radius: 10px; object-fit: cover;" onerror="this.style.display='none'" />
+      <div>
+        <h1 style="margin-bottom: 2px;">Laguna Norte — Rendición de Gastos</h1>
+        <p style="color: #6b7280; font-size: 13px; margin-top: 2px;">${report.title}${report.correlativeNumber ? ` — R-${String(report.correlativeNumber).padStart(3, '0')}` : ''}</p>
+      </div>
     </div>
     <span style="background: ${statusColors[report.status] || '#6b7280'}; color: white; padding: 5px 16px; border-radius: 20px; font-size: 12px; font-weight: 600;">${statusLabels[report.status] || report.status}</span>
   </div>

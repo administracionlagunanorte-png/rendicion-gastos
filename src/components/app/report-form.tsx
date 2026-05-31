@@ -219,7 +219,6 @@ export function ReportForm() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             description: item.description.trim(),
-            amount: montoRendirValue, // Set amount = montoRendir
             numeroBoleta: item.numeroBoleta.trim(),
             montoRendir: montoRendirValue,
             category: item.category,
@@ -244,7 +243,6 @@ export function ReportForm() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             description: item.description.trim(),
-            amount: montoRendirValue, // Set amount = montoRendir
             numeroBoleta: item.numeroBoleta.trim(),
             montoRendir: montoRendirValue,
             category: item.category,
@@ -325,6 +323,9 @@ export function ReportForm() {
         <div>
           <h2 className="text-xl font-bold">
             {isEditing && reportStatus === 'APPROVED' ? 'Modificar Rendición Aprobada' : isEditing ? 'Editar Rendición' : 'Nueva Rendición'}
+            {isEditing && report?.correlativeNumber != null && (
+              <span className="ml-2 text-emerald-600">#{String(report.correlativeNumber).padStart(3, '0')}</span>
+            )}
           </h2>
           <p className="text-sm text-muted-foreground">
             {isEditing && reportStatus === 'APPROVED'
@@ -432,16 +433,19 @@ export function ReportForm() {
                         </Button>
                       </div>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        {/* Descripción */}
-                        <div className="space-y-1 sm:col-span-2">
-                          <Label className="text-xs">Descripción *</Label>
+                        {/* N° Boleta */}
+                        <div className="space-y-1">
+                          <Label className="text-xs flex items-center gap-1">
+                            <Receipt className="h-3 w-3" />
+                            N° Boleta *
+                          </Label>
                           <Input
-                            placeholder="Descripción del gasto"
-                            value={item.description}
-                            onChange={(e) => updateItem(index, 'description', e.target.value)}
+                            placeholder="Ej: 12345"
+                            value={item.numeroBoleta}
+                            onChange={(e) => updateItem(index, 'numeroBoleta', e.target.value)}
                           />
                         </div>
-                        {/* Monto a Rendir + N° Boleta */}
+                        {/* Monto a Rendir */}
                         <div className="space-y-1">
                           <Label className="text-xs">Monto a Rendir *</Label>
                           <div className="relative">
@@ -457,18 +461,7 @@ export function ReportForm() {
                             />
                           </div>
                         </div>
-                        <div className="space-y-1">
-                          <Label className="text-xs flex items-center gap-1">
-                            <Receipt className="h-3 w-3" />
-                            N° Boleta *
-                          </Label>
-                          <Input
-                            placeholder="Ej: 12345"
-                            value={item.numeroBoleta}
-                            onChange={(e) => updateItem(index, 'numeroBoleta', e.target.value)}
-                          />
-                        </div>
-                        {/* Categoría + Fecha */}
+                        {/* Categoría */}
                         <div className="space-y-1">
                           <Label className="text-xs">Categoría *</Label>
                           <Select
@@ -487,12 +480,22 @@ export function ReportForm() {
                             </SelectContent>
                           </Select>
                         </div>
+                        {/* Fecha */}
                         <div className="space-y-1">
                           <Label className="text-xs">Fecha *</Label>
                           <Input
                             type="date"
                             value={item.expenseDate}
                             onChange={(e) => updateItem(index, 'expenseDate', e.target.value)}
+                          />
+                        </div>
+                        {/* Descripción - full width */}
+                        <div className="space-y-1 sm:col-span-2">
+                          <Label className="text-xs">Descripción *</Label>
+                          <Input
+                            placeholder="Descripción del gasto"
+                            value={item.description}
+                            onChange={(e) => updateItem(index, 'description', e.target.value)}
                           />
                         </div>
                       </div>

@@ -20,7 +20,6 @@ export async function PUT(
     const body = await request.json()
     const {
       description,
-      amount,
       numeroBoleta,
       montoRendir,
       category,
@@ -70,7 +69,7 @@ export async function PUT(
       )
     }
 
-    // If montoRendir is provided, set amount = montoRendir
+    // If montoRendir is provided, use it
     const montoRendirValue = montoRendir !== undefined ? parseFloat(montoRendir) : existingItem.montoRendir
 
     // Calcular diferencia de monto para actualizar total del reporte
@@ -82,7 +81,6 @@ export async function PUT(
     if (description !== undefined) updateData.description = description.trim()
     if (montoRendir !== undefined) {
       updateData.montoRendir = montoRendirValue
-      updateData.amount = montoRendirValue // Set amount = montoRendir
     }
     if (numeroBoleta !== undefined) updateData.numeroBoleta = numeroBoleta.trim()
     if (category !== undefined) updateData.category = category.trim()

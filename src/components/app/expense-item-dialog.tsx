@@ -27,7 +27,6 @@ interface Category {
 interface ExpenseItemData {
   id?: string
   description: string
-  amount: string
   numeroBoleta: string
   montoRendir: string
   category: string
@@ -47,7 +46,6 @@ interface ExpenseItemDialogProps {
 export function ExpenseItemDialog({ open, onOpenChange, item, reportId, onSave }: ExpenseItemDialogProps) {
   const [form, setForm] = useState<ExpenseItemData>({
     description: '',
-    amount: '',
     numeroBoleta: '',
     montoRendir: '',
     category: '',
@@ -81,7 +79,6 @@ export function ExpenseItemDialog({ open, onOpenChange, item, reportId, onSave }
     if (item) {
       setForm({
         description: item.description || '',
-        amount: item.amount || '',
         numeroBoleta: item.numeroBoleta || '',
         montoRendir: item.montoRendir || '',
         category: item.category || (categories.length > 0 ? categories[0].name : ''),
@@ -92,7 +89,6 @@ export function ExpenseItemDialog({ open, onOpenChange, item, reportId, onSave }
     } else {
       setForm({
         description: '',
-        amount: '',
         numeroBoleta: '',
         montoRendir: '',
         category: categories.length > 0 ? categories[0].name : '',
@@ -130,7 +126,6 @@ export function ExpenseItemDialog({ open, onOpenChange, item, reportId, onSave }
       const montoRendirValue = parseFloat(form.montoRendir)
       const payload = {
         description: form.description.trim(),
-        amount: montoRendirValue, // Set amount = montoRendir for backward compatibility
         numeroBoleta: form.numeroBoleta.trim(),
         montoRendir: montoRendirValue,
         category: form.category,

@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { useAuth } from '@/lib/auth-context'
 import { motion } from 'framer-motion'
-import { Loader2, LogIn, Mail, Lock, Receipt } from 'lucide-react'
+import { Loader2, LogIn, Mail, Lock } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -66,12 +66,12 @@ export function LoginForm() {
             initial={{ scale: 0.8 }}
             animate={{ scale: 1 }}
             transition={{ duration: 0.5, delay: 0.1 }}
-            className="inline-flex items-center justify-center w-16 h-16 bg-emerald-600 rounded-2xl mb-4 shadow-lg shadow-emerald-200"
+            className="inline-block mb-4"
           >
-            <Receipt className="h-8 w-8 text-white" />
+            <img src="/logo.jpg" alt="Laguna Norte" className="h-16 w-16 rounded-2xl object-cover shadow-lg shadow-emerald-200" />
           </motion.div>
-          <h1 className="text-2xl font-bold text-foreground">Rendición de Gastos</h1>
-          <p className="text-muted-foreground text-sm mt-1">Sistema de gestión de gastos empresariales</p>
+          <h1 className="text-2xl font-bold text-foreground">Laguna Norte</h1>
+          <p className="text-muted-foreground text-sm mt-1">Rendición de Gastos</p>
         </div>
 
         <Card className="shadow-xl border-0 shadow-emerald-100/50">

@@ -55,6 +55,7 @@ export async function POST() {
     // Crear reportes de ejemplo
     const report1 = await db.expenseReport.create({
       data: {
+        correlativeNumber: 1,
         title: "Viaje de negocios - Madrid",
         description: "Gastos del viaje a la conferencia en Madrid del 15 al 18 de enero",
         userId: user1.id,
@@ -68,6 +69,7 @@ export async function POST() {
 
     const report2 = await db.expenseReport.create({
       data: {
+        correlativeNumber: 2,
         title: "Material de oficina - Enero",
         description: "Compra de suministros de oficina para el mes de enero",
         userId: user1.id,
@@ -80,6 +82,7 @@ export async function POST() {
 
     const report3 = await db.expenseReport.create({
       data: {
+        correlativeNumber: 3,
         title: "Almuerzos con clientes",
         description: "Comidas de negocio con clientes potenciales",
         userId: user2.id,
@@ -90,6 +93,7 @@ export async function POST() {
 
     const report4 = await db.expenseReport.create({
       data: {
+        correlativeNumber: 4,
         title: "Capacitación online",
         description: "Cursos y certificaciones profesionales",
         userId: user2.id,
@@ -103,6 +107,7 @@ export async function POST() {
 
     const report5 = await db.expenseReport.create({
       data: {
+        correlativeNumber: 5,
         title: "Transporte febrero",
         description: "Gastos de transporte y movilidad del mes de febrero",
         userId: user1.id,
@@ -119,7 +124,6 @@ export async function POST() {
       data: [
         {
           description: "Vuelo ida y vuelta Madrid",
-          amount: 350.00,
           numeroBoleta: "B001-00001",
           montoRendir: 350.00,
           category: "Transporte",
@@ -130,7 +134,6 @@ export async function POST() {
         },
         {
           description: "Hotel 3 noches",
-          amount: 300.50,
           numeroBoleta: "B001-00002",
           montoRendir: 300.50,
           category: "Alojamiento",
@@ -141,7 +144,6 @@ export async function POST() {
         },
         {
           description: "Cena con cliente",
-          amount: 120.00,
           numeroBoleta: "B001-00003",
           montoRendir: 120.00,
           category: "Alimentación",
@@ -152,7 +154,6 @@ export async function POST() {
         },
         {
           description: "Taxi aeropuerto-hotel",
-          amount: 80.00,
           numeroBoleta: "B001-00004",
           montoRendir: 80.00,
           category: "Transporte",
@@ -169,7 +170,6 @@ export async function POST() {
       data: [
         {
           description: "Resmas de papel A4",
-          amount: 45.80,
           numeroBoleta: "B002-00001",
           montoRendir: 45.80,
           category: "Oficina",
@@ -180,7 +180,6 @@ export async function POST() {
         },
         {
           description: "Cartuchos de tinta impresora",
-          amount: 89.00,
           numeroBoleta: "B002-00002",
           montoRendir: 89.00,
           category: "Oficina",
@@ -191,7 +190,6 @@ export async function POST() {
         },
         {
           description: "Carpetas y archivadores",
-          amount: 100.00,
           numeroBoleta: "B002-00003",
           montoRendir: 100.00,
           category: "Oficina",
@@ -208,7 +206,6 @@ export async function POST() {
       data: [
         {
           description: "Curso AWS Solutions Architect",
-          amount: 250.00,
           numeroBoleta: "B004-00001",
           montoRendir: 250.00,
           category: "Capacitación",
@@ -219,7 +216,6 @@ export async function POST() {
         },
         {
           description: "Certificación Scrum Master",
-          amount: 200.00,
           numeroBoleta: "B004-00002",
           montoRendir: 200.00,
           category: "Capacitación",
@@ -236,7 +232,6 @@ export async function POST() {
       data: [
         {
           description: "Abono transporte público",
-          amount: 120.00,
           numeroBoleta: "B005-00001",
           montoRendir: 120.00,
           category: "Transporte",
@@ -247,7 +242,6 @@ export async function POST() {
         },
         {
           description: "Taxi reunión cliente",
-          amount: 45.00,
           numeroBoleta: "B005-00002",
           montoRendir: 45.00,
           category: "Transporte",
@@ -258,7 +252,6 @@ export async function POST() {
         },
         {
           description: "Estacionamiento oficina central",
-          amount: 155.00,
           numeroBoleta: "B005-00003",
           montoRendir: 155.00,
           category: "Transporte",

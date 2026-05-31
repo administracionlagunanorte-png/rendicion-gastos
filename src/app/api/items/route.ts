@@ -16,7 +16,6 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const {
       description,
-      amount,
       numeroBoleta,
       montoRendir,
       category,
@@ -116,14 +115,12 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Set amount = montoRendir for backward compatibility
     const montoRendirValue = parseFloat(montoRendir)
 
     // Crear item
     const item = await db.expenseItem.create({
       data: {
         description: description.trim(),
-        amount: montoRendirValue, // amount = montoRendir
         numeroBoleta: numeroBoleta.trim(),
         montoRendir: montoRendirValue,
         category: category.trim(),

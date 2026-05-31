@@ -14,6 +14,7 @@ import {
   FileEdit,
   Send,
   Download,
+  Camera,
   FileText,
   DollarSign,
   Calendar,
@@ -233,6 +234,30 @@ export function ReportDetail() {
     }
   }
 
+  const handleDownloadPhotos = async () => {
+    try {
+      const url = `/api/export/photos?reportId=${selectedReportId}`
+      const res = await fetch(url)
+      if (!res.ok) {
+        const data = await res.json()
+        throw new Error(data.error || 'Error al descargar fotos')
+      }
+      const blob = await res.blob()
+      const downloadUrl = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = downloadUrl
+      const correlative = report?.correlativeNumber
+        ? `R-${String(report.correlativeNumber).padStart(3, '0')}`
+        : selectedReportId
+      a.download = `fotos_rendicion_${correlative}.zip`
+      a.click()
+      URL.revokeObjectURL(downloadUrl)
+      toast.success('Fotos descargadas correctamente')
+    } catch (err: any) {
+      toast.error(err.message || 'Error al descargar las fotos')
+    }
+  }
+
   if (isLoading) {
     return (
       <div className="space-y-4 max-w-3xl">
@@ -331,7 +356,14 @@ export function ReportDetail() {
         </Button>
         <div className="flex-1 min-w-0">
           <div className="flex items-start justify-between gap-2">
-            <h2 className="text-xl font-bold truncate">{report.title}</h2>
+            <div className="flex items-center gap-2">
+              {report.correlativeNumber != null && (
+                <Badge className="bg-emerald-600 text-white border-0 text-xs shrink-0">
+                  Rendición #{String(report.correlativeNumber).padStart(3, '0')}
+                </Badge>
+              )}
+              <h2 className="text-xl font-bold truncate">{report.title}</h2>
+            </div>
             <div className="flex items-center gap-2 shrink-0">
               {isAdmin && report.userId === userId && (
                 <Badge variant="outline" className="text-[10px] bg-blue-50 text-blue-700 border-blue-200">
@@ -737,6 +769,16 @@ export function ReportDetail() {
               <Download className="mr-2 h-4 w-4" />
               Exportar a PDF
             </Button>
+            {isAdmin && (
+              <Button
+                variant="outline"
+                className="flex-1 shadow-sm border-blue-200 text-blue-700 hover:bg-blue-50"
+                onClick={handleDownloadPhotos}
+              >
+                <Camera className="mr-2 h-4 w-4" />
+                Descargar Fotos
+              </Button>
+            )}
           </div>
         </CardContent>
       </Card>

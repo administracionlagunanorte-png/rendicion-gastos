@@ -54,13 +54,11 @@ function SidebarContent({
   return (
     <div className="flex flex-col h-full">
       {/* Logo */}
-      <div className="flex items-center gap-3 px-4 py-5">
-        <div className="flex items-center justify-center w-9 h-9 bg-emerald-600 rounded-lg shadow-sm">
-          <Receipt className="h-5 w-5 text-white" />
-        </div>
+      <div className="flex items-center gap-3 px-4 py-4">
+        <img src="/logo.jpg" alt="Laguna Norte" className="h-9 w-9 rounded-lg object-cover shadow-sm" />
         <div>
-          <h2 className="font-bold text-sm">Rendición</h2>
-          <p className="text-[10px] text-muted-foreground">de Gastos</p>
+          <h2 className="font-bold text-sm">Laguna Norte</h2>
+          <p className="text-[10px] text-muted-foreground">Rendición de Gastos</p>
         </div>
       </div>
 
@@ -254,10 +252,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               </SheetContent>
             </Sheet>
             <div className="flex items-center gap-2">
-              <div className="w-7 h-7 bg-emerald-600 rounded-md flex items-center justify-center">
-                <Receipt className="h-4 w-4 text-white" />
-              </div>
-              <span className="font-semibold text-sm">Rendición</span>
+              <img src="/logo.jpg" alt="Laguna Norte" className="h-7 w-7 rounded-md object-cover" />
+              <span className="font-semibold text-sm">Laguna Norte</span>
             </div>
           </div>
 

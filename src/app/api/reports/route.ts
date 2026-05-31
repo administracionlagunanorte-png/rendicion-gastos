@@ -21,6 +21,7 @@ export async function GET(request: NextRequest) {
     const status = searchParams.get("status") || undefined
     const filterUserId = searchParams.get("userId") || undefined
     const category = searchParams.get("category") || undefined
+    const search = searchParams.get("search") || undefined
 
     // Parámetros de paginación
     const page = parseInt(searchParams.get("page") || "1")
@@ -46,6 +47,13 @@ export async function GET(request: NextRequest) {
       where.items = {
         some: { category }
       }
+    }
+
+    if (search) {
+      where.OR = [
+        { title: { contains: search, mode: 'insensitive' } },
+        ...(isNaN(parseInt(search)) ? [] : [{ correlativeNumber: parseInt(search) }]),
+      ]
     }
 
     // Obtener reportes con conteo total
@@ -143,12 +151,20 @@ export async function POST(request: NextRequest) {
     }
 
     // Crear reporte
+    // Get next correlative number
+    const lastReport = await db.expenseReport.findFirst({
+      orderBy: { correlativeNumber: 'desc' },
+      select: { correlativeNumber: true },
+    })
+    const nextCorrelative = (lastReport?.correlativeNumber || 0) + 1
+
     const report = await db.expenseReport.create({
       data: {
         title: title.trim(),
         description: description?.trim() || null,
         userId: reportUserId,
-        status: "DRAFT"
+        status: "DRAFT",
+        correlativeNumber: nextCorrelative,
       },
       include: {
         user: {
