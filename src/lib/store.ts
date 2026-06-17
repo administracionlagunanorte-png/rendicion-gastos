@@ -1,12 +1,14 @@
 import { create } from 'zustand'
 
-type View = 'login' | 'dashboard' | 'create-report' | 'edit-report' | 'report-detail' | 'admin-dashboard' | 'notifications' | 'users-panel'
+type View = 'login' | 'dashboard' | 'create-report' | 'edit-report' | 'report-detail' | 'admin-dashboard' | 'notifications' | 'users-panel' | 'purchase-requests' | 'purchase-request-detail' | 'create-purchase-request' | 'edit-purchase-request'
 
 interface AppState {
   currentView: View
   setCurrentView: (view: View) => void
   selectedReportId: string | null
   setSelectedReportId: (id: string | null) => void
+  selectedPurchaseRequestId: string | null
+  setSelectedPurchaseRequestId: (id: string | null) => void
   filters: {
     status: string
     userId: string
@@ -31,6 +33,8 @@ export const useAppStore = create<AppState>((set) => ({
   setCurrentView: (view) => set({ currentView: view }),
   selectedReportId: null,
   setSelectedReportId: (id) => set({ selectedReportId: id }),
+  selectedPurchaseRequestId: null,
+  setSelectedPurchaseRequestId: (id) => set({ selectedPurchaseRequestId: id }),
   filters: { ...defaultFilters },
   setFilters: (filters) => set((state) => ({ filters: { ...state.filters, ...filters } })),
   resetFilters: () => set({ filters: { ...defaultFilters } })

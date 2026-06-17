@@ -14,6 +14,7 @@ import {
   Shield,
   ChevronRight,
   Users,
+  ShoppingCart,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -166,6 +167,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       view: 'create-report',
     },
     {
+      id: 'purchase-requests',
+      label: 'Solicitudes de Compra',
+      icon: <ShoppingCart className="h-4 w-4" />,
+      view: 'purchase-requests',
+    },
+    {
       id: 'notifications',
       label: 'Notificaciones',
       icon: <Bell className="h-4 w-4" />,
@@ -191,6 +198,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       label: 'Nueva Rendición',
       icon: <PlusCircle className="h-4 w-4" />,
       view: 'create-report',
+    },
+    {
+      id: 'purchase-requests',
+      label: 'Solicitudes de Compra',
+      icon: <ShoppingCart className="h-4 w-4" />,
+      view: 'purchase-requests',
     },
     {
       id: 'users-panel',

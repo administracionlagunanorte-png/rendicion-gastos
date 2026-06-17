@@ -13,6 +13,9 @@ import { ReportDetail } from '@/components/app/report-detail'
 import { ReportsList } from '@/components/app/reports-list'
 import { NotificationsPanel } from '@/components/app/notifications-panel'
 import { UsersPanel } from '@/components/app/users-panel'
+import { PurchaseRequestsList } from '@/components/app/purchase-requests-list'
+import { PurchaseRequestForm } from '@/components/app/purchase-request-form'
+import { PurchaseRequestDetail } from '@/components/app/purchase-request-detail'
 import { Loader2 } from 'lucide-react'
 
 const queryClient = new QueryClient({
@@ -72,6 +75,14 @@ function AppContent() {
         return <NotificationsPanel />
       case 'users-panel':
         return <UsersPanel />
+      case 'purchase-requests':
+        return <PurchaseRequestsList />
+      case 'create-purchase-request':
+        return <PurchaseRequestForm mode="create" />
+      case 'edit-purchase-request':
+        return <PurchaseRequestForm mode="edit" />
+      case 'purchase-request-detail':
+        return <PurchaseRequestDetail />
       default:
         return <ReportsList />
     }

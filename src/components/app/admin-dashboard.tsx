@@ -23,6 +23,7 @@ import {
   Zap,
   Hourglass,
   Search,
+  ShoppingCart,
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -67,6 +68,16 @@ export function AdminDashboard() {
     queryKey: ['pending-reports'],
     queryFn: async () => {
       const res = await fetch('/api/reports?status=SUBMITTED&pageSize=10')
+      if (!res.ok) throw new Error('Error')
+      return res.json()
+    },
+  })
+
+  // Fetch pending purchase requests
+  const { data: pendingPurchases, isLoading: purchasesLoading } = useQuery({
+    queryKey: ['pending-purchase-requests'],
+    queryFn: async () => {
+      const res = await fetch('/api/purchase-requests?status=PENDIENTE&pageSize=5')
       if (!res.ok) throw new Error('Error')
       return res.json()
     },
@@ -521,6 +532,92 @@ export function AdminDashboard() {
                       Pendiente
                     </Badge>
                     <Button variant="ghost" size="sm" className="h-7 text-emerald-600">
+                      <Eye className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Pending Purchase Requests */}
+      <Card className="shadow-sm border-blue-200">
+        <CardHeader className="pb-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <CardTitle className="text-base flex items-center gap-2">
+                <ShoppingCart className="h-4 w-4 text-blue-600" />
+                Solicitudes de Compra Pendientes
+              </CardTitle>
+              {pendingPurchases?.pagination?.total > 0 && (
+                <Badge className="bg-blue-500 text-white border-0 text-[10px]">
+                  {pendingPurchases.pagination.total}
+                </Badge>
+              )}
+            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-blue-600 hover:text-blue-700 text-xs"
+              onClick={() => setCurrentView('purchase-requests')}
+            >
+              Ver todas <TrendingUp className="ml-1 h-3 w-3" />
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {purchasesLoading ? (
+            <div className="space-y-3">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="flex items-center justify-between">
+                  <Skeleton className="h-4 w-48" />
+                  <Skeleton className="h-5 w-24" />
+                </div>
+              ))}
+            </div>
+          ) : pendingPurchases?.requests?.length === 0 ? (
+            <div className="text-center py-6">
+              <CheckCircle2 className="h-10 w-10 mx-auto text-emerald-300 mb-2" />
+              <p className="text-sm text-muted-foreground">No hay solicitudes de compra pendientes</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {pendingPurchases?.requests?.map((req: any) => (
+                <div
+                  key={req.id}
+                  className="flex items-center justify-between py-2.5 px-3 rounded-lg hover:bg-muted/50 cursor-pointer transition-colors border border-transparent hover:border-blue-100"
+                  onClick={() => {
+                    useAppStore.getState().setSelectedPurchaseRequestId(req.id)
+                    setCurrentView('purchase-request-detail')
+                  }}
+                >
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <Badge variant="outline" className="text-[9px] bg-blue-50 text-blue-700 border-blue-200 shrink-0 px-1">
+                        SC-{String(req.correlativeNumber).padStart(3, '0')}
+                      </Badge>
+                      {req.priority === 'URGENTE' && (
+                        <Badge className="bg-red-500 text-white border-0 text-[9px] px-1">URGENTE</Badge>
+                      )}
+                      {req.priority === 'ALTA' && (
+                        <Badge className="bg-orange-500 text-white border-0 text-[9px] px-1">ALTA</Badge>
+                      )}
+                      <p className="text-sm font-medium truncate">{req.productDescription}</p>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      {req.user?.name} · {new Date(req.createdAt).toLocaleDateString('es-CL')} · {req.quantity} unid.
+                      {req.brand && ` · ${req.brand}`}
+                      {req.quotes?.length > 0 && ` · ${req.quotes.length} cotiz.`}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2 ml-2">
+                    <Badge variant="outline" className="text-[10px] bg-amber-50 text-amber-700 border-amber-200">
+                      <Clock className="h-3 w-3 mr-1" />
+                      Pendiente
+                    </Badge>
+                    <Button variant="ghost" size="sm" className="h-7 text-blue-600">
                       <Eye className="h-3.5 w-3.5" />
                     </Button>
                   </div>
